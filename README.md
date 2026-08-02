@@ -1,5 +1,7 @@
 # 🛡️ KAYA PTS — Enterprise Personel Takip ve Yönetim Sistemi
 
+[🇹🇷 Türkçe](README.md) | [🇬🇧 English](README_EN.md)
+
 **KAYA PTS (Kaya Personel Takip Sistemi)**; kurumsal şirketlerin insan kaynakları, izin süreçleri, departman analitiği ve bordro/maaş yönetimini en üst düzey güvenlik, modern cam efektli (Glassmorphism) kullanıcı deneyimi ve modüler mimari ile buluşturan yeni nesil kurumsal bir web platformudur.
 
 ---
