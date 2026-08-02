@@ -6,6 +6,34 @@
 
 ---
 
+## 📸 Ekran Görüntüleri & Arayüz Turu
+
+### ⚡ Yönetici Gösterge Paneli (Executive Dashboard)
+![Yönetici Gösterge Paneli](images/dashboard.png)
+
+<details>
+  <summary><b>🔍 Diğer Modüllerin Ekran Görüntülerini İncelemek İçin Tıklayın (Daraltılabilir Menü)</b></summary>
+  <br>
+
+  #### 👥 1. Personel Yönetimi (Canlı Filtreleme & Arama)
+  ![Personel Yönetimi](images/personeller.png)
+
+  #### 📅 2. İzin Yönetimi & Onay İş Akışları
+  ![İzin Yönetimi](images/izinler.png)
+
+  #### 🛡️ 3. Kullanıcı & 4 Kademeli Rol Yönetimi (RBAC)
+  ![Kullanıcı Yönetimi](images/kullanicilar.png)
+
+  #### 🗑️ 4. Çöp Kutusu & Geri Yükleme Arşivi
+  ![Çöp Kutusu](images/cop_kutusu.png)
+
+  #### 📜 5. Sistem Denetim Logları (Audit Trails)
+  ![Denetim Logları](images/loglar.png)
+
+</details>
+
+---
+
 ## 🌟 Öne Çıkan Özellikler
 
 - 🏗️ **Modüler Mimari (Flask Blueprints):** 7 bağımsız iş modülü (`auth`, `dashboard`, `personel`, `izin`, `kullanici`, `logs`, `api`).

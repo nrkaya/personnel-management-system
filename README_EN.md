@@ -12,6 +12,34 @@
 
 ---
 
+## 📸 Screenshots & UI Showcase
+
+### ⚡ Executive Dashboard
+![Executive Dashboard](images/dashboard.png)
+
+<details>
+  <summary><b>🔍 Click to View Additional Module Screenshots (Collapsible Menu)</b></summary>
+  <br>
+
+  #### 👥 1. Personnel Management (Live Filtering & Search)
+  ![Personnel Management](images/personeller.png)
+
+  #### 📅 2. Leave Management & Approval Workflows
+  ![Leave Management](images/izinler.png)
+
+  #### 🛡️ 3. User & 4-Tier Role Administration (RBAC)
+  ![User Administration](images/kullanicilar.png)
+
+  #### 🗑️ 4. Trash Bin & Archive Recovery
+  ![Trash Bin](images/cop_kutusu.png)
+
+  #### 📜 5. System Audit Logs & Activity Trails
+  ![System Audit Logs](images/loglar.png)
+
+</details>
+
+---
+
 ## 🌟 Key Features
 
 - 🏗️ **Modular Architecture (Flask Blueprints):** 7 decoupled business domain modules (`auth`, `dashboard`, `personel`, `izin`, `kullanici`, `logs`, `api`).
