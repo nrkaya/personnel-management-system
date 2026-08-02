@@ -3,10 +3,10 @@
 {% block content %}
 <div class="glass error-container">
     <div class="error-code">400</div>
-    <h2 class="error-title">Geçersiz İstek / CSRF Hatası</h2>
-    <p class="error-desc">{{ error_desc or 'Gönderilen istek güvenlik denetimini geçemedi veya oturumunuz zaman aşımına uğradı.' }}</p>
+    <h2 class="error-title">{{ _('err_400_title') }}</h2>
+    <p class="error-desc">{{ _('err_400_desc') }}</p>
     <a href="{{ url_for('dashboard.index') }}" class="btn btn-primary">
-        <i data-lucide="home"></i> Gösterge Paneline Dön
+        <i data-lucide="home"></i> {{ _('err_btn_home') }}
     </a>
 </div>
 {% endblock %}
@@ -14,8 +14,8 @@
 {% block login_content %}
 <div class="glass login-box">
     <div class="error-code">400</div>
-    <h2 class="error-title">Güvenlik Hatası</h2>
-    <p class="error-desc">CSRF doğrulaması başarısız. Lütfen sayfayı yenileyip tekrar deneyin.</p>
-    <a href="{{ url_for('auth.login') }}" class="btn btn-primary">Giriş Sayfasına Dön</a>
+    <h2 class="error-title">{{ _('err_400_title') }}</h2>
+    <p class="error-desc">{{ _('err_400_desc') }}</p>
+    <a href="{{ url_for('auth.login') }}" class="btn btn-primary">{{ _('login_heading') }}</a>
 </div>
 {% endblock %}

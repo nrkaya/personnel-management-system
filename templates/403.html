@@ -3,10 +3,10 @@
 {% block content %}
 <div class="glass error-container">
     <div class="error-code">403</div>
-    <h2 class="error-title">Yetkisiz Erişim (Forbidden)</h2>
-    <p class="error-desc">Bu sayfayı görüntülemek veya bu işlemi gerçekleştirmek için gerekli yetki seviyesine (Role) sahip değilsiniz.</p>
+    <h2 class="error-title">{{ _('err_403_title') }}</h2>
+    <p class="error-desc">{{ _('err_403_desc') }}</p>
     <a href="{{ url_for('dashboard.index') }}" class="btn btn-primary">
-        <i data-lucide="home"></i> Gösterge Paneline Dön
+        <i data-lucide="home"></i> {{ _('err_btn_home') }}
     </a>
 </div>
 {% endblock %}
@@ -14,8 +14,8 @@
 {% block login_content %}
 <div class="glass login-box">
     <div class="error-code">403</div>
-    <h2 class="error-title">Yetkisiz Erişim</h2>
-    <p class="error-desc">Bu işlemi yapmak için yetkiniz bulunmuyor.</p>
-    <a href="{{ url_for('auth.login') }}" class="btn btn-primary">Giriş Sayfasına Dön</a>
+    <h2 class="error-title">{{ _('err_403_title') }}</h2>
+    <p class="error-desc">{{ _('err_403_desc') }}</p>
+    <a href="{{ url_for('auth.login') }}" class="btn btn-primary">{{ _('login_heading') }}</a>
 </div>
 {% endblock %}

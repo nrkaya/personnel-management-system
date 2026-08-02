@@ -119,6 +119,50 @@ body.login-body {
 }
 .nav-link.active svg { color: #60a5fa; }
 
+/* Language Switcher */
+.lang-switcher-wrapper {
+    margin-bottom: 0.85rem;
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+.lang-switcher {
+    display: flex;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--glass-border);
+    padding: 3px;
+    border-radius: 10px;
+    gap: 4px;
+    width: 100%;
+}
+.lang-btn {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 10px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-decoration: none;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+.lang-btn:hover {
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.06);
+}
+.lang-btn.active {
+    background: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.4);
+}
+.lang-flag {
+    font-size: 0.95rem;
+    line-height: 1;
+}
+
 /* User Info at Bottom */
 .user-info {
     margin-top: auto;
@@ -479,8 +523,10 @@ tr:hover { background: rgba(255, 255, 255, 0.02); }
 
 /* Login */
 .login-wrapper { min-height: 100vh; display: flex; align-items: center; justify-content: center; width: 100%; }
-.login-box { max-width: 440px; width: 100%; padding: 3rem 2.5rem; text-align: center; }
-.login-brand { margin-bottom: 2rem; }
+.login-box { max-width: 440px; width: 100%; padding: 3rem 2.5rem; text-align: center; position: relative; }
+.lang-switcher-login { position: absolute; top: 1.2rem; right: 1.2rem; display: flex; gap: 4px; background: rgba(255, 255, 255, 0.04); padding: 3px; border-radius: 8px; border: 1px solid var(--glass-border); }
+.lang-switcher-login .lang-btn { padding: 3px 8px; font-size: 0.72rem; }
+.login-brand { margin-bottom: 2rem; margin-top: 0.5rem; }
 .login-brand-logo {
     display: flex; align-items: center; justify-content: center; gap: 10px;
     font-size: 1.8rem; font-weight: 800;

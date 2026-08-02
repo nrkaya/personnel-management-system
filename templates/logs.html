@@ -3,16 +3,16 @@
 {% block content %}
 <div class="page-header">
     <div>
-        <h2 class="page-title"><i data-lucide="clipboard-list"></i> Sistem Denetim Logları</h2>
-        <p class="section-subtitle">Tüm kullanıcı hareketleri, girişler, değişiklikler ve güvenlik denetim kayıtları</p>
+        <h2 class="page-title"><i data-lucide="clipboard-list"></i> {{ _('logs_title') }}</h2>
+        <p class="section-subtitle">{{ _('logs_subtitle') }}</p>
     </div>
 </div>
 
 <form method="GET" action="{{ url_for('logs.index') }}" class="glass filter-bar">
-    <input type="text" name="user" class="filter-input" placeholder="Kullanıcı adı ara..." value="{{ filter_user }}">
-    <input type="text" name="type" class="filter-input" placeholder="İşlem tipi ara (Örn: Giriş, Silindi)..." value="{{ filter_type }}">
-    <button type="submit" class="btn btn-primary"><i data-lucide="filter"></i> Filtrele</button>
-    <a href="{{ url_for('logs.index') }}" class="btn btn-outline"><i data-lucide="rotate-ccw"></i> Temizle</a>
+    <input type="text" name="user" class="filter-input" placeholder="{{ _('logs_search_user_ph') }}" value="{{ filter_user }}">
+    <input type="text" name="type" class="filter-input" placeholder="{{ _('logs_search_type_ph') }}" value="{{ filter_user }}">
+    <button type="submit" class="btn btn-primary"><i data-lucide="filter"></i> {{ _('logs_btn_filter') }}</button>
+    <a href="{{ url_for('logs.index') }}" class="btn btn-outline"><i data-lucide="rotate-ccw"></i> {{ _('logs_btn_clear') }}</a>
 </form>
 
 <div class="glass table-container">
@@ -20,11 +20,11 @@
     <table>
         <thead>
             <tr>
-                <th>Tarih & Saat</th>
-                <th>Kullanıcı</th>
-                <th>İşlem Tipi</th>
-                <th>Detay</th>
-                <th>IP Adresi</th>
+                <th>{{ _('logs_th_date') }}</th>
+                <th>{{ _('logs_th_user') }}</th>
+                <th>{{ _('logs_th_event') }}</th>
+                <th>{{ _('logs_th_detail') }}</th>
+                <th>{{ _('logs_th_ip') }}</th>
             </tr>
         </thead>
         <tbody>
@@ -41,7 +41,7 @@
     </table>
     {% else %}
     <div class="empty-state">
-        <p>Arama kriterlerine uygun denetim logu bulunamadı.</p>
+        <p>{{ _('logs_empty_desc') }}</p>
     </div>
     {% endif %}
 </div>

@@ -53,6 +53,15 @@ def validate_password(password):
         return False, "Şifre en az bir rakam (0-9) içermelidir."
     return True, "Şifre geçerli."
 
+def allowed_file(filename, allowed_extensions=None):
+    """Check if file extension is within allowed whitelist."""
+    if not filename or '.' not in filename:
+        return False
+    if allowed_extensions is None:
+        allowed_extensions = {'png', 'jpg', 'jpeg', 'webp'}
+    ext = filename.rsplit('.', 1)[1].lower()
+    return ext in allowed_extensions
+
 def validate_file_upload(file):
     """Validate file extension and MIME type."""
     if not file or file.filename == '':

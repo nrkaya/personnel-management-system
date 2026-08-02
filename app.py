@@ -19,6 +19,10 @@ def create_app(config_name=None):
     db.init_app(app)
     csrf.init_app(app)
     
+    # Initialize i18n translations
+    from i18n import load_translations, _, get_locale
+    load_translations()
+    
     # Register blueprints
     from routes.auth import auth_bp
     from routes.dashboard import dashboard_bp
@@ -27,6 +31,7 @@ def create_app(config_name=None):
     from routes.kullanici import kullanici_bp
     from routes.logs import logs_bp
     from routes.api import api_bp
+    from routes.lang import lang_bp
     
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
@@ -35,6 +40,7 @@ def create_app(config_name=None):
     app.register_blueprint(kullanici_bp)
     app.register_blueprint(logs_bp)
     app.register_blueprint(api_bp)
+    app.register_blueprint(lang_bp)
     
     @app.context_processor
     def inject_globals():
@@ -45,7 +51,9 @@ def create_app(config_name=None):
             'can_view_logs': has_permission(user_role, 'logs'),
             'can_view_trash': has_permission(user_role, 'trash'),
             'can_add_personnel': has_permission(user_role, 'add'),
-            'can_view_salary': has_permission(user_role, 'salary')
+            'can_view_salary': has_permission(user_role, 'salary'),
+            '_': _,
+            'get_locale': get_locale
         }
         
     @app.errorhandler(400)
@@ -84,4 +92,8 @@ def create_app(config_name=None):
 app = create_app()
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(
+        host="0.0.0.0",
+        port=int(os.environ.get("PORT", 5000)),
+        debug=False
+    )

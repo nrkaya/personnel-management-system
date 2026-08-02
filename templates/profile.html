@@ -4,17 +4,17 @@
 <div class="page-header">
     <div>
         <a href="{{ url_for('personel.index') }}" class="back-link">
-            <i data-lucide="arrow-left"></i> Personel Listesine Dön
+            <i data-lucide="arrow-left"></i> {{ _('trash_back_to_list') }}
         </a>
         <h2 class="page-title page-title-compact">{{ p.tam_ad }}</h2>
     </div>
     <div class="header-actions">
         <button class="btn btn-outline" onclick="window.print()">
-            <i data-lucide="printer"></i> Yazdır / PDF
+            <i data-lucide="printer"></i> {{ _('profile_btn_print') }}
         </button>
         {% if can_edit %}
         <button class="btn btn-primary" onclick="openEditModal()">
-            <i data-lucide="edit"></i> Düzenle
+            <i data-lucide="edit"></i> {{ _('personnel_btn_edit') }}
         </button>
         {% endif %}
     </div>
@@ -25,30 +25,30 @@
         <img src="{{ url_for('static', filename='uploads/' + (p.avatar_path or 'default.png')) }}" alt="Avatar" class="avatar" onerror="this.src='/static/uploads/default.png'">
         <div class="profile-info">
             <h3>{{ p.tam_ad }}</h3>
-            <p class="profile-position">{{ p.pozisyon or 'Pozisyon Belirtilmemiş' }}</p>
-            <span class="dept-badge">{{ p.departman or 'Departmansız' }}</span>
+            <p class="profile-position">{{ p.pozisyon or _('profile_not_specified') }}</p>
+            <span class="dept-badge">{{ p.departman or '-' }}</span>
         </div>
         
         <div class="profile-details-section">
             <div class="detail-item">
-                <label>Telefon</label>
+                <label>{{ _('modal_phone') }}</label>
                 <div>{{ p.telefon or '-' }}</div>
             </div>
             <div class="detail-item">
-                <label>E-Posta</label>
+                <label>{{ _('modal_email') }}</label>
                 <div>{{ p.email or '-' }}</div>
             </div>
             <div class="detail-item">
-                <label>İşe Giriş Tarihi</label>
+                <label>{{ _('modal_start_date') }}</label>
                 <div>{{ p.ise_giris_tarihi.strftime('%d.%m.%Y') if p.ise_giris_tarihi else '-' }}</div>
             </div>
             <div class="detail-item">
-                <label>Doğum Tarihi</label>
+                <label>{{ _('modal_birth_date') }}</label>
                 <div>{{ p.dogum_tarihi.strftime('%d.%m.%Y') if p.dogum_tarihi else '-' }}</div>
             </div>
             {% if can_view_salary %}
             <div class="detail-item">
-                <label>Aylık Net Maaş</label>
+                <label>{{ _('profile_salary_net') }}</label>
                 <div class="salary-highlight">{{ "{:,.2f}".format(p.maas) }} ₺</div>
             </div>
             {% endif %}
@@ -58,10 +58,10 @@
     <div class="profile-details-col">
         <div class="glass detail-box">
             <div class="card-header-flex">
-                <h3 class="box-heading"><i data-lucide="calendar"></i> İzin Geçmişi</h3>
+                <h3 class="box-heading"><i data-lucide="calendar"></i> {{ _('profile_leave_history') }}</h3>
                 {% if can_manage_leaves %}
                 <button class="btn btn-outline btn-sm" onclick="openLeaveModal()">
-                    <i data-lucide="plus"></i> Yeni İzin Girişi
+                    <i data-lucide="plus"></i> {{ _('profile_btn_new_leave') }}
                 </button>
                 {% endif %}
             </div>
@@ -70,12 +70,12 @@
             <table class="table-compact">
                 <thead>
                     <tr>
-                        <th>Tarih Aralığı</th>
-                        <th>İzin Türü</th>
-                        <th>Durum</th>
-                        <th>Açıklama</th>
+                        <th>{{ _('leaves_th_start') }} - {{ _('leaves_th_end') }}</th>
+                        <th>{{ _('leaves_th_type') }}</th>
+                        <th>{{ _('leaves_th_status') }}</th>
+                        <th>{{ _('leaves_th_reason') }}</th>
                         {% if can_manage_leaves %}
-                        <th class="text-right">İşlem</th>
+                        <th class="text-right">{{ _('leaves_th_actions') }}</th>
                         {% endif %}
                     </tr>
                 </thead>
@@ -92,7 +92,7 @@
                         <td>{{ izin.aciklama or '-' }}</td>
                         {% if can_manage_leaves %}
                         <td class="text-right">
-                            <form action="{{ url_for('izin.sil', id=izin.id) }}" method="POST" class="inline-form" onsubmit="return confirm('Bu izin kaydını silmek istediğinize emin misiniz?');">
+                            <form action="{{ url_for('izin.sil', id=izin.id) }}" method="POST" class="inline-form" onsubmit="return confirm('{{ _('profile_delete_leave_confirm') }}');">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button type="submit" class="btn btn-danger btn-xs" title="Sil"><i data-lucide="trash-2"></i></button>
                             </form>
@@ -103,13 +103,13 @@
                 </tbody>
             </table>
             {% else %}
-            <p class="text-muted empty-text-centered">Henüz kayıtlı bir izin bulunmamaktadır.</p>
+            <p class="text-muted empty-text-centered">{{ _('profile_no_leaves') }}</p>
             {% endif %}
         </div>
 
         <div class="glass detail-box">
-            <h3 class="box-heading"><i data-lucide="file-text"></i> Özlük Dosyası & Notlar</h3>
-            <p class="notes-text">{{ p.ek_bilgi or 'Personel hakkında henüz özel bir not eklenmemiştir.' }}</p>
+            <h3 class="box-heading"><i data-lucide="file-text"></i> {{ _('profile_dossier') }}</h3>
+            <p class="notes-text">{{ p.ek_bilgi or _('profile_no_notes') }}</p>
         </div>
     </div>
 </div>
@@ -118,38 +118,38 @@
 <div class="modal-overlay" id="editModal">
     <div class="glass modal">
         <div class="modal-header">
-            <h3 class="modal-title"><i data-lucide="edit-3"></i> Personel Bilgilerini Güncelle</h3>
+            <h3 class="modal-title"><i data-lucide="edit-3"></i> {{ _('modal_edit_title') }}</h3>
             <button class="close-btn" onclick="closeEditModal()">&times;</button>
         </div>
         <form method="POST" action="{{ url_for('personel.edit', id=p.id) }}" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="form-row">
-                <div class="form-group form-col"><label>Ad</label><input type="text" name="ad" class="form-control" value="{{ p.ad }}" required></div>
-                <div class="form-group form-col"><label>Soyad</label><input type="text" name="soyad" class="form-control" value="{{ p.soyad }}" required></div>
+                <div class="form-group form-col"><label>{{ _('modal_first_name') }}</label><input type="text" name="ad" class="form-control" value="{{ p.ad }}" required></div>
+                <div class="form-group form-col"><label>{{ _('modal_last_name') }}</label><input type="text" name="soyad" class="form-control" value="{{ p.soyad }}" required></div>
             </div>
             <div class="form-row">
-                <div class="form-group form-col"><label>Departman</label><input type="text" name="departman" class="form-control" value="{{ p.departman or '' }}"></div>
-                <div class="form-group form-col"><label>Pozisyon</label><input type="text" name="pozisyon" class="form-control" value="{{ p.pozisyon or '' }}"></div>
+                <div class="form-group form-col"><label>{{ _('modal_dept') }}</label><input type="text" name="departman" class="form-control" value="{{ p.departman or '' }}"></div>
+                <div class="form-group form-col"><label>{{ _('modal_pos') }}</label><input type="text" name="pozisyon" class="form-control" value="{{ p.pozisyon or '' }}"></div>
             </div>
             <div class="form-row">
-                <div class="form-group form-col"><label>Telefon</label><input type="text" name="telefon" class="form-control" value="{{ p.telefon or '' }}"></div>
-                <div class="form-group form-col"><label>E-Posta</label><input type="email" name="email" class="form-control" value="{{ p.email or '' }}"></div>
+                <div class="form-group form-col"><label>{{ _('modal_phone') }}</label><input type="text" name="telefon" class="form-control" value="{{ p.telefon or '' }}"></div>
+                <div class="form-group form-col"><label>{{ _('modal_email') }}</label><input type="email" name="email" class="form-control" value="{{ p.email or '' }}"></div>
             </div>
             <div class="form-row">
                 {% if can_view_salary %}
-                <div class="form-group form-col"><label>Maaş (₺)</label><input type="number" step="0.01" name="maas" class="form-control" value="{{ p.maas }}"></div>
+                <div class="form-group form-col"><label>{{ _('modal_salary') }}</label><input type="number" step="0.01" name="maas" class="form-control" value="{{ p.maas }}"></div>
                 {% endif %}
-                <div class="form-group form-col"><label>İşe Giriş Tarihi</label><input type="date" name="ise_giris_tarihi" class="form-control" value="{{ p.ise_giris_tarihi.strftime('%Y-%m-%d') if p.ise_giris_tarihi else '' }}"></div>
+                <div class="form-group form-col"><label>{{ _('modal_start_date') }}</label><input type="date" name="ise_giris_tarihi" class="form-control" value="{{ p.ise_giris_tarihi.strftime('%Y-%m-%d') if p.ise_giris_tarihi else '' }}"></div>
             </div>
             <div class="form-row">
-                <div class="form-group form-col"><label>Doğum Tarihi</label><input type="date" name="dogum_tarihi" class="form-control" value="{{ p.dogum_tarihi.strftime('%Y-%m-%d') if p.dogum_tarihi else '' }}"></div>
-                <div class="form-group form-col"><label>Fotoğraf Güncelle (.png, .jpg, .webp)</label><input type="file" name="avatar" class="form-control" accept=".png,.jpg,.jpeg,.webp"></div>
+                <div class="form-group form-col"><label>{{ _('modal_birth_date') }}</label><input type="date" name="dogum_tarihi" class="form-control" value="{{ p.dogum_tarihi.strftime('%Y-%m-%d') if p.dogum_tarihi else '' }}"></div>
+                <div class="form-group form-col"><label>{{ _('modal_photo') }}</label><input type="file" name="avatar" class="form-control" accept=".png,.jpg,.jpeg,.webp"></div>
             </div>
             <div class="form-group">
-                <label>Ek Notlar</label>
+                <label>{{ _('modal_notes') }}</label>
                 <textarea name="ek_bilgi" class="form-control" rows="3">{{ p.ek_bilgi or '' }}</textarea>
             </div>
-            <button type="submit" class="btn btn-primary btn-full"><i data-lucide="check"></i> Değişiklikleri Kaydet</button>
+            <button type="submit" class="btn btn-primary btn-full"><i data-lucide="check"></i> {{ _('profile_btn_save_changes') }}</button>
         </form>
     </div>
 </div>
@@ -159,34 +159,34 @@
 <div class="modal-overlay" id="leaveModal">
     <div class="glass modal modal-sm">
         <div class="modal-header">
-            <h3 class="modal-title"><i data-lucide="calendar-plus"></i> İzin Kaydı Ekle</h3>
+            <h3 class="modal-title"><i data-lucide="calendar-plus"></i> {{ _('leaves_modal_title') }}</h3>
             <button class="close-btn" onclick="closeLeaveModal()">&times;</button>
         </div>
         <form method="POST" action="{{ url_for('izin.ekle', personel_id=p.id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="form-group">
-                <label>Başlangıç Tarihi</label>
+                <label>{{ _('leaves_modal_start') }}</label>
                 <input type="date" name="baslangic" class="form-control" required>
             </div>
             <div class="form-group">
-                <label>Bitiş Tarihi</label>
+                <label>{{ _('leaves_modal_end') }}</label>
                 <input type="date" name="bitis" class="form-control" required>
             </div>
             <div class="form-group">
-                <label>İzin Türü</label>
+                <label>{{ _('leaves_modal_type') }}</label>
                 <select name="tur" class="form-control">
-                    <option value="Yıllık İzin">Yıllık İzin</option>
-                    <option value="Mazeret İzni">Mazeret İzni</option>
-                    <option value="Hastalık Raporu">Hastalık Raporu</option>
-                    <option value="Ücretsiz İzin">Ücretsiz İzin</option>
-                    <option value="Doğum İzni">Doğum İzni</option>
+                    <option value="Yıllık İzin">{{ _('leaves_type_annual') }}</option>
+                    <option value="Mazeret İzni">{{ _('leaves_type_other') }}</option>
+                    <option value="Hastalık Raporu">{{ _('leaves_type_sick') }}</option>
+                    <option value="Ücretsiz İzin">{{ _('leaves_type_unpaid') }}</option>
+                    <option value="Doğum İzni">{{ _('leaves_type_maternity') }}</option>
                 </select>
             </div>
             <div class="form-group">
-                <label>Açıklama</label>
-                <textarea name="aciklama" class="form-control" rows="2" placeholder="İzin gerekçesi..."></textarea>
+                <label>{{ _('leaves_modal_reason') }}</label>
+                <textarea name="aciklama" class="form-control" rows="2" placeholder="..."></textarea>
             </div>
-            <button type="submit" class="btn btn-primary btn-full"><i data-lucide="check"></i> İzni Kaydet</button>
+            <button type="submit" class="btn btn-primary btn-full"><i data-lucide="check"></i> {{ _('profile_btn_save_leave') }}</button>
         </form>
     </div>
 </div>

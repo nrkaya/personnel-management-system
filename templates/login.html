@@ -3,35 +3,39 @@
 {% block login_content %}
 <div class="login-wrapper">
     <div class="glass login-box">
+        <div class="lang-switcher-login">
+            <a href="{{ url_for('lang.set_language', lang_code='tr', next=request.path) }}" class="lang-btn {% if get_locale() == 'tr' %}active{% endif %}">TR</a>
+            <a href="{{ url_for('lang.set_language', lang_code='en', next=request.path) }}" class="lang-btn {% if get_locale() == 'en' %}active{% endif %}">EN</a>
+        </div>
         <div class="login-brand">
             <div class="login-brand-logo">
                 <i data-lucide="shield-check" class="brand-icon-lg"></i>
                 <span>KAYA PTS</span>
             </div>
-            <div class="login-brand-sub">Kaya Personel Takip Sistemi (Enterprise)</div>
+            <div class="login-brand-sub">{{ _('app_title') }}</div>
         </div>
 
-        <h3 class="login-heading">Güvenli Giriş</h3>
+        <h3 class="login-heading">{{ _('login_heading') }}</h3>
 
         <form method="POST" action="{{ url_for('auth.login') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             
             <div class="form-group">
-                <label><i data-lucide="user" class="icon-inline"></i> Kullanıcı Adı</label>
-                <input type="text" name="kullanici_adi" class="form-control" required autofocus placeholder="Kullanıcı adınız..." value="{{ kullanici_adi or '' }}">
+                <label><i data-lucide="user" class="icon-inline"></i> {{ _('login_field_username') }}</label>
+                <input type="text" name="kullanici_adi" class="form-control" required autofocus placeholder="{{ _('login_field_username') }}..." value="{{ kullanici_adi or '' }}">
             </div>
             
             <div class="form-group">
-                <label><i data-lucide="lock" class="icon-inline"></i> Şifre</label>
-                <input type="password" name="sifre" class="form-control" required placeholder="Şifreniz...">
+                <label><i data-lucide="lock" class="icon-inline"></i> {{ _('login_field_password') }}</label>
+                <input type="password" name="sifre" class="form-control" required placeholder="{{ _('login_field_password') }}...">
             </div>
 
             <div class="login-help-note">
-                <i data-lucide="shield-alert" class="icon-inline"></i> 5 hatalı denemede hesap 10 dakika kilitlenir.
+                <i data-lucide="shield-alert" class="icon-inline"></i> {{ _('login_lockout_warning') }}
             </div>
 
             <button type="submit" class="btn btn-primary btn-full">
-                <i data-lucide="log-in"></i> Sisteme Giriş Yap
+                <i data-lucide="log-in"></i> {{ _('login_btn_submit') }}
             </button>
         </form>
     </div>

@@ -3,30 +3,30 @@
 {% block content %}
 <div class="page-header">
     <div>
-        <h2 class="page-title">İzin Yönetimi</h2>
-        <p class="section-subtitle">Şirket genelindeki tüm izin kayıtları ve durum takibi</p>
+        <h2 class="page-title">{{ _('leaves_title') }}</h2>
+        <p class="section-subtitle">{{ _('leaves_subtitle') }}</p>
     </div>
 </div>
 
 <form method="GET" action="{{ url_for('izin.index') }}" class="glass filter-bar">
     <select name="tur" class="filter-select">
-        <option value="">Tüm İzin Türleri</option>
-        <option value="Yıllık İzin" {% if filter_tur == 'Yıllık İzin' %}selected{% endif %}>Yıllık İzin</option>
-        <option value="Mazeret İzni" {% if filter_tur == 'Mazeret İzni' %}selected{% endif %}>Mazeret İzni</option>
-        <option value="Hastalık Raporu" {% if filter_tur == 'Hastalık Raporu' %}selected{% endif %}>Hastalık Raporu</option>
-        <option value="Ücretsiz İzin" {% if filter_tur == 'Ücretsiz İzin' %}selected{% endif %}>Ücretsiz İzin</option>
-        <option value="Doğum İzni" {% if filter_tur == 'Doğum İzni' %}selected{% endif %}>Doğum İzni</option>
+        <option value="">{{ _('leaves_all_types') }}</option>
+        <option value="Yıllık İzin" {% if filter_tur == 'Yıllık İzin' %}selected{% endif %}>{{ _('leaves_type_annual') }}</option>
+        <option value="Mazeret İzni" {% if filter_tur == 'Mazeret İzni' %}selected{% endif %}>{{ _('leaves_type_other') }}</option>
+        <option value="Hastalık Raporu" {% if filter_tur == 'Hastalık Raporu' %}selected{% endif %}>{{ _('leaves_type_sick') }}</option>
+        <option value="Ücretsiz İzin" {% if filter_tur == 'Ücretsiz İzin' %}selected{% endif %}>{{ _('leaves_type_unpaid') }}</option>
+        <option value="Doğum İzni" {% if filter_tur == 'Doğum İzni' %}selected{% endif %}>{{ _('leaves_type_maternity') }}</option>
     </select>
 
     <select name="durum" class="filter-select">
-        <option value="">Tüm Durumlar</option>
-        <option value="Onaylandı" {% if filter_durum == 'Onaylandı' %}selected{% endif %}>Onaylandı</option>
-        <option value="Beklemede" {% if filter_durum == 'Beklemede' %}selected{% endif %}>Beklemede</option>
-        <option value="Reddedildi" {% if filter_durum == 'Reddedildi' %}selected{% endif %}>Reddedildi</option>
+        <option value="">{{ _('leaves_all_statuses') }}</option>
+        <option value="Onaylandı" {% if filter_durum == 'Onaylandı' %}selected{% endif %}>{{ _('leaves_status_approved') }}</option>
+        <option value="Beklemede" {% if filter_durum == 'Beklemede' %}selected{% endif %}>{{ _('leaves_status_pending') }}</option>
+        <option value="Reddedildi" {% if filter_durum == 'Reddedildi' %}selected{% endif %}>{{ _('leaves_status_rejected') }}</option>
     </select>
 
-    <button type="submit" class="btn btn-primary"><i data-lucide="filter"></i> Filtrele</button>
-    <a href="{{ url_for('izin.index') }}" class="btn btn-outline"><i data-lucide="rotate-ccw"></i> Temizle</a>
+    <button type="submit" class="btn btn-primary"><i data-lucide="filter"></i> {{ _('personnel_filter_btn') }}</button>
+    <a href="{{ url_for('izin.index') }}" class="btn btn-outline"><i data-lucide="rotate-ccw"></i> {{ _('personnel_clear_btn') }}</a>
 </form>
 
 <div class="glass table-container">
@@ -34,14 +34,14 @@
     <table>
         <thead>
             <tr>
-                <th>Personel</th>
-                <th>Departman</th>
-                <th>Başlangıç - Bitiş</th>
-                <th>İzin Türü</th>
-                <th>Durum</th>
-                <th>Açıklama</th>
+                <th>{{ _('leaves_th_personnel') }}</th>
+                <th>{{ _('personnel_th_dept') }}</th>
+                <th>{{ _('leaves_th_start') }} - {{ _('leaves_th_end') }}</th>
+                <th>{{ _('leaves_th_type') }}</th>
+                <th>{{ _('leaves_th_status') }}</th>
+                <th>{{ _('leaves_th_reason') }}</th>
                 {% if can_manage %}
-                <th class="text-right">Durum Güncelle</th>
+                <th class="text-right">{{ _('leaves_th_actions') }}</th>
                 {% endif %}
             </tr>
         </thead>
@@ -54,7 +54,7 @@
                         <a href="{{ url_for('personel.profile', id=i.personel_id) }}" class="personnel-name">
                             {{ i.personel.tam_ad if i.personel else 'Silinmiş Personel' }}
                         </a>
-                        <div class="personnel-date">Kayıt: {{ i.eklenme_tarihi.strftime('%d.%m.%Y') if i.eklenme_tarihi else '-' }}</div>
+                        <div class="personnel-date">{{ i.eklenme_tarihi.strftime('%d.%m.%Y') if i.eklenme_tarihi else '-' }}</div>
                     </div>
                 </td>
                 <td><span class="dept-badge">{{ i.personel.departman if i.personel else '-' }}</span></td>
@@ -71,9 +71,9 @@
                     <form action="{{ url_for('izin.durum_guncelle', id=i.id) }}" method="POST" class="inline-form">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <select name="durum" class="select-sm" onchange="this.form.submit()">
-                            <option value="Onaylandı" {% if i.durum == 'Onaylandı' %}selected{% endif %}>Onayla</option>
-                            <option value="Beklemede" {% if i.durum == 'Beklemede' %}selected{% endif %}>Beklet</option>
-                            <option value="Reddedildi" {% if i.durum == 'Reddedildi' %}selected{% endif %}>Reddet</option>
+                            <option value="Onaylandı" {% if i.durum == 'Onaylandı' %}selected{% endif %}>{{ _('leaves_btn_approve') }}</option>
+                            <option value="Beklemede" {% if i.durum == 'Beklemede' %}selected{% endif %}>{{ _('leaves_status_pending') }}</option>
+                            <option value="Reddedildi" {% if i.durum == 'Reddedildi' %}selected{% endif %}>{{ _('leaves_btn_reject') }}</option>
                         </select>
                     </form>
                 </td>
@@ -85,8 +85,8 @@
     {% else %}
     <div class="empty-state">
         <i data-lucide="calendar-x" class="empty-state-icon"></i>
-        <h3>İzin Kaydı Bulunamadı</h3>
-        <p>Arama kriterlerinize uygun izin kaydı mevcut değil.</p>
+        <h3>{{ _('leaves_not_found') }}</h3>
+        <p>{{ _('leaves_not_found_desc') }}</p>
     </div>
     {% endif %}
 </div>

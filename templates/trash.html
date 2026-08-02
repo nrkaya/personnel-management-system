@@ -4,10 +4,10 @@
 <div class="page-header">
     <div>
         <a href="{{ url_for('personel.index') }}" class="back-link">
-            <i data-lucide="arrow-left"></i> Personel Listesine Dön
+            <i data-lucide="arrow-left"></i> {{ _('trash_back_to_list') }}
         </a>
-        <h2 class="page-title page-title-compact"><i data-lucide="trash-2"></i> Çöp Kutusu & Arşiv</h2>
-        <p class="section-subtitle">Silinen personeller burada arşivlenir. Geri yükleyebilir veya kalıcı olarak silebilirsiniz.</p>
+        <h2 class="page-title page-title-compact"><i data-lucide="trash-2"></i> {{ _('trash_title') }}</h2>
+        <p class="section-subtitle">{{ _('trash_subtitle') }}</p>
     </div>
 </div>
 
@@ -16,12 +16,12 @@
     <table>
         <thead>
             <tr>
-                <th>Personel</th>
-                <th>Departman</th>
-                <th>Pozisyon</th>
-                <th>Telefon</th>
-                <th>Durum</th>
-                <th class="text-right">İşlemler</th>
+                <th>{{ _('trash_th_personnel') }}</th>
+                <th>{{ _('personnel_th_dept') }}</th>
+                <th>{{ _('personnel_th_pos') }}</th>
+                <th>{{ _('trash_th_contact') }}</th>
+                <th>{{ _('personnel_th_status') }}</th>
+                <th class="text-right">{{ _('trash_th_actions') }}</th>
             </tr>
         </thead>
         <tbody>
@@ -37,18 +37,18 @@
                 <td><span class="dept-badge">{{ p.departman or '-' }}</span></td>
                 <td>{{ p.pozisyon or '-' }}</td>
                 <td>{{ p.telefon or '-' }}</td>
-                <td><span class="status-badge-inactive">Arşivlendi</span></td>
+                <td><span class="status-badge-inactive">{{ _('personnel_status_inactive') }}</span></td>
                 <td class="text-right">
                     <form action="{{ url_for('personel.restore', id=p.id) }}" method="POST" class="inline-form">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="btn btn-restore" title="Geri Yükle">
-                            <i data-lucide="rotate-ccw"></i> Geri Yükle
+                        <button type="submit" class="btn btn-restore" title="{{ _('trash_btn_restore') }}">
+                            <i data-lucide="rotate-ccw"></i> {{ _('trash_btn_restore') }}
                         </button>
                     </form>
-                    <form action="{{ url_for('personel.hard_delete', id=p.id) }}" method="POST" class="inline-form" onsubmit="return confirm('DİKKAT: Bu personeli kalıcı olarak silmek üzeresiniz. Tüm izin ve kayıtlar yok edilecektir. Onaylıyor musunuz?');">
+                    <form action="{{ url_for('personel.hard_delete', id=p.id) }}" method="POST" class="inline-form" onsubmit="return confirm('{{ _('trash_hard_delete_confirm') }}');">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="btn btn-danger" title="Kalıcı Olarak Sil">
-                            <i data-lucide="flame"></i> Kalıcı Sil
+                        <button type="submit" class="btn btn-danger" title="{{ _('trash_btn_hard_delete') }}">
+                            <i data-lucide="flame"></i> {{ _('trash_btn_hard_delete') }}
                         </button>
                     </form>
                 </td>
@@ -59,8 +59,8 @@
     {% else %}
     <div class="empty-state">
         <i data-lucide="sparkles" class="empty-state-icon text-success"></i>
-        <h3>Çöp Kutusu Boş</h3>
-        <p>Arşivlenmiş veya silinmiş herhangi bir personel kaydı bulunmamaktadır.</p>
+        <h3>{{ _('trash_empty_title') }}</h3>
+        <p>{{ _('trash_empty_desc') }}</p>
     </div>
     {% endif %}
 </div>

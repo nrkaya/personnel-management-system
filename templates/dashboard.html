@@ -3,16 +3,16 @@
 {% block content %}
 <div class="page-header">
     <div>
-        <h2 class="page-title">Yönetici Gösterge Paneli</h2>
-        <p class="section-subtitle">Şirket genel durumu, personel hareketleri ve anlık izin metrikleri</p>
+        <h2 class="page-title">{{ _('dash_title') }}</h2>
+        <p class="section-subtitle">{{ _('dash_subtitle') }}</p>
     </div>
     <div class="header-actions">
         <a href="{{ url_for('personel.index') }}" class="btn btn-outline">
-            <i data-lucide="users"></i> Personelleri Gör
+            <i data-lucide="users"></i> {{ _('dash_view_personnel') }}
         </a>
         {% if can_add_personnel %}
         <button class="btn btn-primary" onclick="openAddModal()">
-            <i data-lucide="user-plus"></i> Yeni Personel
+            <i data-lucide="user-plus"></i> {{ _('dash_new_personnel') }}
         </button>
         {% endif %}
     </div>
@@ -23,32 +23,32 @@
         <div class="stat-icon-wrapper">
             <i data-lucide="users" class="stat-icon text-blue"></i>
         </div>
-        <div class="stat-label">Toplam Personel</div>
+        <div class="stat-label">{{ _('dash_stat_total') }}</div>
         <div class="stat-value">{{ total_personnel }}</div>
-        <div class="stat-subtext">Aktif çalışan kadrosu</div>
+        <div class="stat-subtext">{{ _('dash_stat_total_sub') }}</div>
     </div>
 
     <div class="bento-box stat-box">
         <div class="stat-icon-wrapper">
             <i data-lucide="calendar-off" class="stat-icon text-warning"></i>
         </div>
-        <div class="stat-label">Bugün İzinde Olanlar</div>
+        <div class="stat-label">{{ _('dash_stat_on_leave') }}</div>
         <div class="stat-value stat-value-warning">{{ active_leaves_count }}</div>
-        <div class="stat-subtext">Bugün aktif izinli personel</div>
+        <div class="stat-subtext">{{ _('dash_stat_on_leave_sub') }}</div>
     </div>
 
     <div class="bento-box stat-box">
         <div class="stat-icon-wrapper">
             <i data-lucide="shield-check" class="stat-icon text-success"></i>
         </div>
-        <div class="stat-label">Sistem Kullanıcıları</div>
+        <div class="stat-label">{{ _('dash_stat_users') }}</div>
         <div class="stat-value stat-value-success">{{ total_users }}</div>
-        <div class="stat-subtext">Yetkilendirilmiş hesaplar</div>
+        <div class="stat-subtext">{{ _('dash_stat_users_sub') }}</div>
     </div>
 
     <div class="bento-box chart-box">
         <div class="card-header-flex">
-            <h3 class="section-heading"><i data-lucide="pie-chart"></i> Departman Dağılımı</h3>
+            <h3 class="section-heading"><i data-lucide="pie-chart"></i> {{ _('dash_dept_dist') }}</h3>
         </div>
         <div class="chart-container">
             <canvas id="deptChart"></canvas>
@@ -56,10 +56,10 @@
     </div>
 
     <div class="bento-box info-box">
-        <h3 class="section-heading"><i data-lucide="cake"></i> Doğum Günleri & İzinler</h3>
+        <h3 class="section-heading"><i data-lucide="cake"></i> {{ _('dash_birthdays_leaves') }}</h3>
         
         <div class="dashboard-sub-section">
-            <h4 class="sub-heading"><i data-lucide="cake" class="icon-inline"></i> Bugün Doğum Günü Olanlar</h4>
+            <h4 class="sub-heading"><i data-lucide="cake" class="icon-inline"></i> {{ _('dash_birthdays_today') }}</h4>
             {% if birthdays_today %}
                 <ul class="activity-list">
                 {% for b in birthdays_today %}
@@ -73,12 +73,12 @@
                 {% endfor %}
                 </ul>
             {% else %}
-                <p class="text-muted-sm">Bugün doğum günü olan personel bulunmuyor.</p>
+                <p class="text-muted-sm">{{ _('dash_no_birthdays') }}</p>
             {% endif %}
         </div>
 
         <div class="dashboard-sub-section mt-4">
-            <h4 class="sub-heading"><i data-lucide="calendar-clock" class="icon-inline"></i> Yaklaşan İzinler (14 Gün)</h4>
+            <h4 class="sub-heading"><i data-lucide="calendar-clock" class="icon-inline"></i> {{ _('dash_upcoming_leaves') }}</h4>
             {% if upcoming_leaves %}
                 <ul class="activity-list">
                 {% for l in upcoming_leaves %}
@@ -92,16 +92,16 @@
                 {% endfor %}
                 </ul>
             {% else %}
-                <p class="text-muted-sm">Yakın tarihte planlanmış izin bulunmuyor.</p>
+                <p class="text-muted-sm">{{ _('dash_no_upcoming_leaves') }}</p>
             {% endif %}
         </div>
     </div>
 
     <div class="bento-box recent-box">
         <div class="card-header-flex">
-            <h3 class="section-heading"><i data-lucide="activity"></i> Son Sistem Aktiviteleri</h3>
+            <h3 class="section-heading"><i data-lucide="activity"></i> {{ _('dash_recent_activity') }}</h3>
             {% if can_view_logs %}
-            <a href="{{ url_for('logs.index') }}" class="view-all-link">Tümü &rarr;</a>
+            <a href="{{ url_for('logs.index') }}" class="view-all-link">{{ _('dash_view_all') }} &rarr;</a>
             {% endif %}
         </div>
         <ul class="recent-list">
@@ -115,7 +115,7 @@
                 <div class="recent-item-time">{{ log.tarih_saat.strftime('%d.%m.%Y %H:%M') if log.tarih_saat else '-' }}</div>
             </li>
             {% else %}
-            <li class="recent-empty">Kayıtlı sistem hareketi bulunamadı.</li>
+            <li class="recent-empty">{{ _('dash_no_activity') }}</li>
             {% endfor %}
         </ul>
     </div>

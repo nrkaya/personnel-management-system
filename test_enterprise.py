@@ -234,5 +234,27 @@ class EnterpriseSystemTestCase(unittest.TestCase):
         self.assertEqual(resp.status_code, 404)
         self.assertIn("404", resp.data.decode('utf-8', errors='ignore'))
 
+    def test_i18n_translation_and_language_switching(self):
+        """Test i18n translation engine and language switching endpoint."""
+        from i18n import translate, get_locale
+
+        # Direct translation lookup
+        self.assertEqual(translate('app_title', locale='tr'), 'KAYA PTS - Kaya Personel Takip Sistemi (Enterprise)')
+        self.assertEqual(translate('app_title', locale='en'), 'KAYA PTS - Kaya Personnel Tracking System (Enterprise)')
+        self.assertEqual(translate('nav_dashboard', locale='tr'), 'Gösterge Paneli')
+        self.assertEqual(translate('nav_dashboard', locale='en'), 'Dashboard')
+
+        # Language switching via route
+        resp = self.client.get('/lang/en', follow_redirects=True)
+        self.assertEqual(resp.status_code, 200)
+        with self.client.session_transaction() as sess:
+            self.assertEqual(sess.get('lang'), 'en')
+
+        # Switch back to Turkish
+        resp_tr = self.client.get('/lang/tr', follow_redirects=True)
+        self.assertEqual(resp_tr.status_code, 200)
+        with self.client.session_transaction() as sess:
+            self.assertEqual(sess.get('lang'), 'tr')
+
 if __name__ == '__main__':
     unittest.main()
