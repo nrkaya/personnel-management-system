@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: kaya_pts_web
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - SECRET_KEY=kaya_pts_ultra_secure_enterprise_secret_key_2026
+      - DATABASE_URL=postgresql://kaya_user:kaya_secure_password@db:5432/kaya_pts_db
+    depends_on:
+      - db
+    volumes:
+      - static_uploads:/app/static/uploads
+
+  db:
+    image: postgres:16-alpine
+    container_name: kaya_pts_db
+    restart: always
+    environment:
+      - POSTGRES_USER=kaya_user
+      - POSTGRES_PASSWORD=kaya_secure_password
+      - POSTGRES_DB=kaya_pts_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  postgres_data:
+  static_uploads:

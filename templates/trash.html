@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <a href="{{ url_for('personel.index') }}" class="back-link">
+            <i data-lucide="arrow-left"></i> Personel Listesine Dön
+        </a>
+        <h2 class="page-title page-title-compact"><i data-lucide="trash-2"></i> Çöp Kutusu & Arşiv</h2>
+        <p class="section-subtitle">Silinen personeller burada arşivlenir. Geri yükleyebilir veya kalıcı olarak silebilirsiniz.</p>
+    </div>
+</div>
+
+<div class="glass table-container">
+    {% if personeller %}
+    <table>
+        <thead>
+            <tr>
+                <th>Personel</th>
+                <th>Departman</th>
+                <th>Pozisyon</th>
+                <th>Telefon</th>
+                <th>Durum</th>
+                <th class="text-right">İşlemler</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in personeller %}
+            <tr>
+                <td class="personnel-cell">
+                    <img src="{{ url_for('static', filename='uploads/' + (p.avatar_path or 'default.png')) }}" alt="Avatar" class="table-avatar" onerror="this.src='/static/uploads/default.png'">
+                    <div>
+                        <div class="personnel-name">{{ p.tam_ad }}</div>
+                        <div class="personnel-date">ID: #{{ p.id }}</div>
+                    </div>
+                </td>
+                <td><span class="dept-badge">{{ p.departman or '-' }}</span></td>
+                <td>{{ p.pozisyon or '-' }}</td>
+                <td>{{ p.telefon or '-' }}</td>
+                <td><span class="status-badge-inactive">Arşivlendi</span></td>
+                <td class="text-right">
+                    <form action="{{ url_for('personel.restore', id=p.id) }}" method="POST" class="inline-form">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-restore" title="Geri Yükle">
+                            <i data-lucide="rotate-ccw"></i> Geri Yükle
+                        </button>
+                    </form>
+                    <form action="{{ url_for('personel.hard_delete', id=p.id) }}" method="POST" class="inline-form" onsubmit="return confirm('DİKKAT: Bu personeli kalıcı olarak silmek üzeresiniz. Tüm izin ve kayıtlar yok edilecektir. Onaylıyor musunuz?');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-danger" title="Kalıcı Olarak Sil">
+                            <i data-lucide="flame"></i> Kalıcı Sil
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <i data-lucide="sparkles" class="empty-state-icon text-success"></i>
+        <h3>Çöp Kutusu Boş</h3>
+        <p>Arşivlenmiş veya silinmiş herhangi bir personel kaydı bulunmamaktadır.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

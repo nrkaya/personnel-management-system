@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="glass error-container">
+    <div class="error-code">404</div>
+    <h2 class="error-title">Sayfa Bulunamadı</h2>
+    <p class="error-desc">Aradığınız sayfa silinmiş, adı değiştirilmiş veya geçici olarak kullanım dışı kalmış olabilir.</p>
+    <a href="{{ url_for('dashboard.index') }}" class="btn btn-primary">
+        <i data-lucide="home"></i> Gösterge Paneline Dön
+    </a>
+</div>
+{% endblock %}
+
+{% block login_content %}
+<div class="glass login-box">
+    <div class="error-code">404</div>
+    <h2 class="error-title">Sayfa Bulunamadı</h2>
+    <p class="error-desc">Ulaşmaya çalıştığınız adres sistemde mevcut değil.</p>
+    <a href="{{ url_for('auth.login') }}" class="btn btn-primary">Giriş Sayfasına Dön</a>
+</div>
+{% endblock %}

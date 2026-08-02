@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2 class="page-title">Kullanıcı & Rol Yönetimi</h2>
+        <p class="section-subtitle">Sisteme erişebilen kullanıcılar ve 4 kademeli kurumsal rol bazlı yetkilendirme (Admin, İK, Müdür, Muhasebe)</p>
+    </div>
+    <button class="btn btn-primary" onclick="openUserModal()">
+        <i data-lucide="user-plus"></i> Yeni Kullanıcı Aç
+    </button>
+</div>
+
+<div class="glass table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Kullanıcı Adı</th>
+                <th>Ad Soyad</th>
+                <th>E-Posta</th>
+                <th>Mevcut Rol</th>
+                <th>Durum</th>
+                <th class="text-right">Rol Değiştir & Sil</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td><strong>{{ user.kullanici_adi }}</strong></td>
+                <td>{{ user.ad_soyad or '-' }}</td>
+                <td>{{ user.email or '-' }}</td>
+                <td>
+                    <span class="role-badge role-badge-{{ user.rol|lower }}">
+                        {{ user.rol }}
+                    </span>
+                </td>
+                <td>
+                    <span class="status-badge-{{ 'active' if user.aktif_mi else 'inactive' }}">
+                        {{ 'Aktif' if user.aktif_mi else 'Pasif' }}
+                    </span>
+                </td>
+                <td class="text-right">
+                    {% if user.kullanici_adi != 'admin' %}
+                    <form action="{{ url_for('kullanici.edit_role', id=user.id) }}" method="POST" class="inline-form">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <select name="rol" class="select-sm" onchange="this.form.submit()">
+                            {% for r in roles %}
+                            <option value="{{ r }}" {% if user.rol == r %}selected{% endif %}>{{ r }}</option>
+                            {% endfor %}
+                        </select>
+                    </form>
+                    
+                    <form action="{{ url_for('kullanici.delete', id=user.id) }}" method="POST" class="inline-form" onsubmit="return confirm('{{ user.kullanici_adi }} kullanıcısını silmek istediğinize emin misiniz?');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-danger btn-xs" title="Sil"><i data-lucide="trash-2"></i></button>
+                    </form>
+                    {% else %}
+                    <span class="text-disabled">Korumalı Ana Yönetici</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="modal-overlay" id="userModal">
+    <div class="glass modal modal-sm">
+        <div class="modal-header">
+            <h3 class="modal-title"><i data-lucide="user-plus"></i> Yeni Kullanıcı Aç</h3>
+            <button class="close-btn" onclick="closeUserModal()">&times;</button>
+        </div>
+        <form method="POST" action="{{ url_for('kullanici.add') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group">
+                <label>Kullanıcı Adı *</label>
+                <input type="text" name="kullanici_adi" class="form-control" required placeholder="Örn: ahmetk">
+            </div>
+            <div class="form-group">
+                <label>Ad Soyad</label>
+                <input type="text" name="ad_soyad" class="form-control" placeholder="Örn: Ahmet Kaya">
+            </div>
+            <div class="form-group">
+                <label>E-Posta</label>
+                <input type="email" name="email" class="form-control" placeholder="Örn: ahmet@kayapts.com">
+            </div>
+            <div class="form-group">
+                <label>Şifre * (Güçlü Şifre Politikası)</label>
+                <input type="password" name="sifre" class="form-control" required placeholder="En az 8 karakter, büyük/küçük harf ve rakam">
+                <small class="form-help-text">Güvenlik kuralı: Min 8 karakter, en az 1 büyük harf, 1 küçük harf, 1 rakam.</small>
+            </div>
+            <div class="form-group">
+                <label>Kullanıcı Rolü</label>
+                <select name="rol" class="form-control">
+                    {% for r in roles %}
+                    <option value="{{ r }}">{{ r }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary btn-full"><i data-lucide="check"></i> Kullanıcıyı Oluştur</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openUserModal() { document.getElementById('userModal').classList.add('active'); lucide.createIcons(); }
+    function closeUserModal() { document.getElementById('userModal').classList.remove('active'); }
+</script>
+{% endblock %}

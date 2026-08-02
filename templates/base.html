@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>KAYA PTS - Kaya Personel Takip Sistemi (Enterprise)</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="{% if not session.get('kullanici_adi') %}login-body{% endif %}">
+
+    {% if session.get('kullanici_adi') %}
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="sidebar-logo">
+                    <i data-lucide="shield-check" class="brand-icon"></i>
+                    <span>KAYA PTS</span>
+                </div>
+                <div class="sidebar-subtitle">Enterprise Personel Takip</div>
+            </div>
+            
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="{{ url_for('dashboard.index') }}" class="nav-link {% if request.blueprint == 'dashboard' %}active{% endif %}">
+                        <i data-lucide="layout-dashboard"></i>
+                        <span>Gösterge Paneli</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('personel.index') }}" class="nav-link {% if request.blueprint == 'personel' and request.endpoint != 'personel.trash' %}active{% endif %}">
+                        <i data-lucide="users"></i>
+                        <span>Personeller</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('izin.index') }}" class="nav-link {% if request.blueprint == 'izin' %}active{% endif %}">
+                        <i data-lucide="calendar-days"></i>
+                        <span>İzin Yönetimi</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('personel.export_excel') }}" class="nav-link">
+                        <i data-lucide="file-spreadsheet"></i>
+                        <span>Excel İndir (.xlsx)</span>
+                    </a>
+                </li>
+                
+                {% if can_manage_users or can_view_logs or can_view_trash %}
+                <li class="nav-item nav-section-title-wrapper">
+                    <span class="nav-section-title">Yönetim & Güvenlik</span>
+                </li>
+                {% if can_manage_users %}
+                <li class="nav-item">
+                    <a href="{{ url_for('kullanici.index') }}" class="nav-link {% if request.blueprint == 'kullanici' %}active{% endif %}">
+                        <i data-lucide="user-cog"></i>
+                        <span>Kullanıcı Yönetimi</span>
+                    </a>
+                </li>
+                {% endif %}
+                {% if can_view_trash %}
+                <li class="nav-item">
+                    <a href="{{ url_for('personel.trash') }}" class="nav-link {% if request.endpoint == 'personel.trash' %}active{% endif %}">
+                        <i data-lucide="trash-2"></i>
+                        <span>Çöp Kutusu (Arşiv)</span>
+                    </a>
+                </li>
+                {% endif %}
+                {% if can_view_logs %}
+                <li class="nav-item">
+                    <a href="{{ url_for('logs.index') }}" class="nav-link {% if request.blueprint == 'logs' %}active{% endif %}">
+                        <i data-lucide="clipboard-list"></i>
+                        <span>Denetim Logları</span>
+                    </a>
+                </li>
+                {% endif %}
+                {% endif %}
+            </ul>
+            
+            <div class="user-info">
+                <div class="user-profile-summary">
+                    <div class="user-avatar-badge">{{ session.get('kullanici_adi', 'K')[0]|upper }}</div>
+                    <div>
+                        <p class="user-name">{{ session['kullanici_adi'] }}</p>
+                        <p class="user-role-badge">Yetki: {{ session.get('rol', 'Personel') }}</p>
+                    </div>
+                </div>
+                <a href="{{ url_for('auth.logout') }}" class="btn btn-outline btn-logout">
+                    <i data-lucide="log-out"></i>
+                    <span>Çıkış Yap</span>
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Flash & Toast Container -->
+            <div class="flash-messages" id="toastContainer">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="flash-message {{ category }}">
+                                <i data-lucide="{% if category == 'success' %}check-circle-2{% elif category == 'error' %}alert-circle{% else %}info{% endif %}"></i>
+                                <span>{{ message }}</span>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+            </div>
+            
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    {% else %}
+        <!-- Login Container -->
+        <div class="flash-messages" id="toastContainer">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash-message {{ category }}">
+                            <i data-lucide="{% if category == 'success' %}check-circle-2{% else %}alert-circle{% endif %}"></i>
+                            <span>{{ message }}</span>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+        {% block login_content %}{% endblock %}
+    {% endif %}
+
+    <!-- Custom JavaScript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>
