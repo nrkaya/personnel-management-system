@@ -20,9 +20,9 @@ instance/
 .env
 .env.local
 
-# User Uploads
-static/uploads/*
-!static/uploads/default.png
+# User Uploads (personal data, never commit)
+uploads/
+static/uploads/
 
 # IDE & OS files
 .vscode/
@@ -30,3 +30,5 @@ static/uploads/*
 .DS_Store
 Thumbs.db
 *.log
+
+backups/

@@ -43,6 +43,12 @@ def get_locale():
 
 def translate(key, default=None, locale=None, **kwargs):
     """Translate a given key into the current or specified locale."""
+    if key is None:
+        return default if default is not None else ""
+        
+    if not isinstance(key, str):
+        key = str(key)
+        
     global _TRANSLATIONS
     if not _TRANSLATIONS:
         load_translations()

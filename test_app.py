@@ -1,29 +1,40 @@
+import unittest
 from utils import allowed_file
 from app import create_app
 from models import Personel, Kullanici
 from database import db
 
-assert allowed_file('avatar.png'), "png should be allowed"
-assert allowed_file('photo.JPG'), "JPG should be allowed"
-assert allowed_file('img.jpeg'), "jpeg should be allowed"
-assert allowed_file('banner.webp'), "webp should be allowed"
-assert not allowed_file('script.exe'), "exe must be blocked"
-assert not allowed_file('hack.php'), "php must be blocked"
-assert not allowed_file('payload.sh'), "sh must be blocked"
-assert not allowed_file('noextension'), "no extension must be blocked"
-print("[TEST] allowed_file tests passed successfully!")
 
-test_app = create_app('testing')
-with test_app.app_context():
-    db.create_all()
-    count = Personel.query.count()
-    user_count = Kullanici.query.count()
-    print(f"[TEST] Database test passed! Active/Total personnel: {count}, Users: {user_count}")
+class SmokeTestCase(unittest.TestCase):
+    def setUp(self):
+        self.app = create_app('testing')
+        self.app_context = self.app.app_context()
+        self.app_context.push()
+        db.create_all()
 
-with test_app.test_client() as client:
-    res = client.get('/login')
-    assert res.status_code == 200, "Login page should return 200"
-    print("[TEST] Web client test passed (login route returns 200)!")
+    def tearDown(self):
+        db.session.remove()
+        db.drop_all()
+        self.app_context.pop()
 
-print("[ALL TESTS PASSED]")
+    def test_allowed_file(self):
+        self.assertTrue(allowed_file('avatar.png'), "png should be allowed")
+        self.assertTrue(allowed_file('photo.JPG'), "JPG should be allowed")
+        self.assertTrue(allowed_file('img.jpeg'), "jpeg should be allowed")
+        self.assertTrue(allowed_file('banner.webp'), "webp should be allowed")
+        self.assertFalse(allowed_file('script.exe'), "exe must be blocked")
+        self.assertFalse(allowed_file('hack.php'), "php must be blocked")
+        self.assertFalse(allowed_file('payload.sh'), "sh must be blocked")
+        self.assertFalse(allowed_file('noextension'), "no extension must be blocked")
 
+    def test_database_starts_empty(self):
+        self.assertEqual(Personel.query.count(), 0)
+        self.assertEqual(Kullanici.query.count(), 0)
+
+    def test_login_page(self):
+        res = self.app.test_client().get('/login')
+        self.assertEqual(res.status_code, 200, "Login page should return 200")
+
+
+if __name__ == '__main__':
+    unittest.main()

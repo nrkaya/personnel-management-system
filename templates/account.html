@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2 class="page-title">{{ _('account_title') }}</h2>
+        <p class="section-subtitle">{{ _('account_subtitle') }}</p>
+    </div>
+</div>
+
+<div class="glass detail-box account-box">
+    <form method="POST" action="{{ url_for('auth.change_password') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="text" name="username" value="{{ current_user.kullanici_adi }}" autocomplete="username" hidden>
+        <div class="form-group">
+            <label>{{ _('account_field_current_password') }}</label>
+            <input type="password" name="mevcut_sifre" class="form-control" required autocomplete="current-password">
+        </div>
+        <div class="form-group">
+            <label>{{ _('account_field_new_password') }}</label>
+            <input type="password" name="yeni_sifre" class="form-control" required minlength="12" autocomplete="new-password">
+            <small class="form-help-text">{{ _('users_password_hint') }}</small>
+        </div>
+        <div class="form-group">
+            <label>{{ _('account_field_new_password_repeat') }}</label>
+            <input type="password" name="yeni_sifre_tekrar" class="form-control" required minlength="12" autocomplete="new-password">
+        </div>
+        <p class="form-help-text form-help-block">{{ _('account_sessions_hint') }}</p>
+        <button type="submit" class="btn btn-primary btn-full"><i data-lucide="check"></i> {{ _('account_btn_save') }}</button>
+    </form>
+</div>
+{% endblock %}

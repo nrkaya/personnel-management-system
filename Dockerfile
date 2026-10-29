@@ -1,29 +1,28 @@
-# Python 3.12 Slim base image
 FROM python:3.12-slim
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-ENV FLASK_ENV=production
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    FLASK_ENV=production \
+    PORT=5000
 
-# Set work directory
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
+RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
 
-# Install python dependencies
-COPY requirements.txt .
+COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy project files
-COPY . .
+COPY --chown=appuser:appgroup . ./
+# Personnel photos are kept outside the public static folder; mount a
+# persistent volume or disk at /app/uploads so they survive redeploys.
+RUN mkdir -p /app/uploads && chown -R appuser:appgroup /app/uploads
 
-# Expose port
+USER appuser
 EXPOSE 5000
 
-# Run with Gunicorn WSGI server
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "app:app"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD python -c "import os; from urllib.request import urlopen; urlopen('http://127.0.0.1:%s/healthz' % os.environ.get('PORT', '5000'), timeout=3)"
+
+# Apply pending migrations, then serve on $PORT (hosts such as Render set it).
+CMD ["sh", "-c", "flask --app app:create_app db upgrade && exec gunicorn --bind 0.0.0.0:${PORT} --workers 2 --timeout 60 --access-logfile - app:app"]

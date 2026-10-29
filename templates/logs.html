@@ -10,7 +10,7 @@
 
 <form method="GET" action="{{ url_for('logs.index') }}" class="glass filter-bar">
     <input type="text" name="user" class="filter-input" placeholder="{{ _('logs_search_user_ph') }}" value="{{ filter_user }}">
-    <input type="text" name="type" class="filter-input" placeholder="{{ _('logs_search_type_ph') }}" value="{{ filter_user }}">
+    <input type="text" name="type" class="filter-input" placeholder="{{ _('logs_search_type_ph') }}" value="{{ filter_type }}">
     <button type="submit" class="btn btn-primary"><i data-lucide="filter"></i> {{ _('logs_btn_filter') }}</button>
     <a href="{{ url_for('logs.index') }}" class="btn btn-outline"><i data-lucide="rotate-ccw"></i> {{ _('logs_btn_clear') }}</a>
 </form>
@@ -32,9 +32,9 @@
             <tr>
                 <td class="log-date">{{ log.tarih_saat.strftime('%d.%m.%Y %H:%M:%S') if log.tarih_saat else '-' }}</td>
                 <td><strong class="log-user">{{ log.kullanici_adi }}</strong></td>
-                <td><span class="log-type-badge">{{ log.islem_tipi }}</span></td>
+                <td><span class="log-type-badge">{{ _(log.islem_tipi) }}</span></td>
                 <td>{{ log.detay or '-' }}</td>
-                <td><span class="ip-badge">{{ log.ip_adresi or '127.0.0.1' }}</span></td>
+                <td><span class="ip-badge">{{ log.ip_adresi or '-' }}</span></td>
             </tr>
             {% endfor %}
         </tbody>
@@ -45,4 +45,15 @@
     </div>
     {% endif %}
 </div>
+{% if pagination and pagination.pages > 1 %}
+<nav class="pagination" aria-label="{{ _('logs_title') }}">
+    {% if pagination.has_prev %}
+    <a class="btn btn-outline" href="{{ url_for('logs.index', page=pagination.prev_num, user=filter_user, type=filter_type) }}">{{ _('btn_prev') }}</a>
+    {% endif %}
+    <span class="pagination-info">{{ pagination.page }} / {{ pagination.pages }}</span>
+    {% if pagination.has_next %}
+    <a class="btn btn-outline" href="{{ url_for('logs.index', page=pagination.next_num, user=filter_user, type=filter_type) }}">{{ _('btn_next') }}</a>
+    {% endif %}
+</nav>
+{% endif %}
 {% endblock %}

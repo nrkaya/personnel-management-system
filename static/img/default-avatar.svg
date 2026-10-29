@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-label="Varsayılan personel avatarı">
+  <rect width="160" height="160" rx="80" fill="#1e293b"/>
+  <circle cx="80" cy="60" r="28" fill="#94a3b8"/>
+  <path d="M28 142c6-30 27-47 52-47s46 17 52 47" fill="#94a3b8"/>
+</svg>
