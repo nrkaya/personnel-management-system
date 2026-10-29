@@ -16,6 +16,7 @@
         <option value="Hastalık Raporu" {% if filter_tur == 'Hastalık Raporu' %}selected{% endif %}>{{ _('leaves_type_sick') }}</option>
         <option value="Ücretsiz İzin" {% if filter_tur == 'Ücretsiz İzin' %}selected{% endif %}>{{ _('leaves_type_unpaid') }}</option>
         <option value="Doğum İzni" {% if filter_tur == 'Doğum İzni' %}selected{% endif %}>{{ _('leaves_type_maternity') }}</option>
+        <option value="Evlilik İzni" {% if filter_tur == 'Evlilik İzni' %}selected{% endif %}>{{ _('leaves_type_marriage') }}</option>
     </select>
 
     <select name="durum" class="filter-select" data-autosubmit>
@@ -37,6 +38,7 @@
                 <th>{{ _('leaves_th_personnel') }}</th>
                 <th>{{ _('personnel_th_dept') }}</th>
                 <th>{{ _('leaves_th_start') }} - {{ _('leaves_th_end') }}</th>
+                <th>{{ _('leaves_th_days') }}</th>
                 <th>{{ _('leaves_th_type') }}</th>
                 <th>{{ _('leaves_th_status') }}</th>
                 {% if can_view_leave_reason %}
@@ -56,16 +58,20 @@
                         <a href="{{ url_for('personel.profile', id=i.personel_id) }}" class="personnel-name">
                             {{ i.personel.tam_ad if i.personel else _('deleted_personnel') }}
                         </a>
-                        <div class="personnel-date">{{ i.eklenme_tarihi.strftime('%d.%m.%Y') if i.eklenme_tarihi else '-' }}</div>
+                        <div class="personnel-date">{{ _('leaves_requested_by', name=i.kullanici_adi or '-', date=i.eklenme_tarihi.strftime('%d.%m.%Y') if i.eklenme_tarihi else '-') }}</div>
                     </div>
                 </td>
                 <td><span class="dept-badge">{{ i.personel.departman if i.personel else '-' }}</span></td>
                 <td><strong>{{ i.baslangic.strftime('%d.%m.%Y') }}</strong> - {{ i.bitis.strftime('%d.%m.%Y') }}</td>
+                <td>{{ i.gun_sayisi }}</td>
                 <td><span class="badge badge-info">{{ _(i.tur) }}</span></td>
                 <td>
                     <span class="status-badge-{{ 'active' if i.durum == 'Onaylandı' else ('warning' if i.durum == 'Beklemede' else 'inactive') }}">
                         {{ _(i.durum) }}
                     </span>
+                    {% if i.onaylayan_kullanici_adi %}
+                    <div class="personnel-date">{{ _('leaves_decided_by', name=i.onaylayan_kullanici_adi, date=i.karar_tarihi.strftime('%d.%m.%Y') if i.karar_tarihi else '-') }}</div>
+                    {% endif %}
                 </td>
                 {% if can_view_leave_reason %}
                 <td>{{ i.aciklama or '-' }}</td>

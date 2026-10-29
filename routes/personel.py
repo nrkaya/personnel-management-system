@@ -53,15 +53,22 @@ def _parse_salary(value):
     return salary
 
 
-def _clean_personnel_form(form, personel=None, can_set_salary=False):
+# Fields that need the 'personal' permission to set.
+PERSONAL_FIELDS = {'ek_bilgi', 'dogum_tarihi'}
+
+
+def _clean_personnel_form(form, personel=None, can_set_salary=False, can_set_personal=False):
     """Validate the add/edit form and return the values to store.
 
     Nothing on the model is touched until every field is valid. When editing,
-    a field missing from the submitted form keeps its current value.
+    a field missing from the submitted form keeps its current value; fields
+    the user's role may not set are ignored.
     """
     is_new = personel is None
     data = {}
     for field, (max_length, label_key) in TEXT_FIELDS.items():
+        if field in PERSONAL_FIELDS and not can_set_personal:
+            continue
         raw = form.get(field)
         if raw is None and not is_new:
             continue
@@ -83,7 +90,7 @@ def _clean_personnel_form(form, personel=None, can_set_salary=False):
     if is_new or form.get('ise_giris_tarihi') is not None:
         ise_giris = _parse_form_date(form.get('ise_giris_tarihi'), 'modal_start_date')
         data['ise_giris_tarihi'] = ise_giris or (date.today() if is_new else None)
-    if is_new or form.get('dogum_tarihi') is not None:
+    if can_set_personal and (is_new or form.get('dogum_tarihi') is not None):
         dogum_tarihi = _parse_form_date(form.get('dogum_tarihi'), 'modal_birth_date')
         if dogum_tarihi and dogum_tarihi > date.today():
             raise ValueError(_('msg_birth_date_future'))
@@ -199,7 +206,11 @@ def avatar(id):
 def add():
     user = get_active_session_user()
     try:
-        data = _clean_personnel_form(request.form, can_set_salary=has_permission(user.rol, 'salary'))
+        data = _clean_personnel_form(
+            request.form,
+            can_set_salary=has_permission(user.rol, 'salary'),
+            can_set_personal=has_permission(user.rol, 'personal'),
+        )
     except ValueError as exc:
         flash(str(exc), 'error')
         return redirect(url_for('personel.index'))
@@ -235,7 +246,11 @@ def edit(id):
     user = get_active_session_user()
     p = db.get_or_404(Personel, id)
     try:
-        data = _clean_personnel_form(request.form, p, can_set_salary=has_permission(user.rol, 'salary'))
+        data = _clean_personnel_form(
+            request.form, p,
+            can_set_salary=has_permission(user.rol, 'salary'),
+            can_set_personal=has_permission(user.rol, 'personal'),
+        )
     except ValueError as exc:
         flash(str(exc), 'error')
         return redirect(url_for('personel.profile', id=id))
@@ -341,11 +356,15 @@ def export_excel():
 
     wb = Workbook()
     ws = wb.active
-    ws.title = "Personel Listesi"
+    # Sheet titles may not exceed 31 characters.
+    ws.title = _('export_sheet_title')[:31]
 
-    headers = ["ID", "Ad", "Soyad", "Departman", "Pozisyon", "Telefon", "E-Posta", "İşe Giriş Tarihi"]
+    headers = ["ID"] + [_(key) for key in (
+        'modal_first_name', 'modal_last_name', 'modal_dept', 'modal_pos',
+        'modal_phone', 'modal_email', 'modal_start_date',
+    )]
     if can_see_salary:
-        headers.append("Maaş (₺)")
+        headers.append(_('modal_salary'))
 
     ws.append(headers)
 
@@ -407,7 +426,7 @@ def export_excel():
     log_action(user.kullanici_adi, 'Dışa Aktarma', f'Personel listesi Excel (.xlsx) olarak indirildi ({len(personeller)} kayıt).')
     return send_file(
         out,
-        download_name=f"KAYA_PTS_Personel_Listesi_{datetime.now().strftime('%Y%m%d')}.xlsx",
+        download_name=f"KAYA_PTS_{_('export_file_name')}_{datetime.now().strftime('%Y%m%d')}.xlsx",
         as_attachment=True,
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )

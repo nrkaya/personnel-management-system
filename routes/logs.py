@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request
+from database import db
 from models import Log
 from utils import permission_required
 
@@ -18,6 +19,9 @@ def index():
 
     if filter_user:
         query = query.filter(Log.kullanici_adi.ilike(f"%{filter_user}%"))
+    # Event types are stored in Turkish; the filter offers the stored values
+    # (shown translated), so it works in every interface language.
+    log_types = [row[0] for row in db.session.query(Log.islem_tipi).distinct().order_by(Log.islem_tipi)]
     if filter_type:
         query = query.filter(Log.islem_tipi == filter_type)
 
@@ -30,5 +34,6 @@ def index():
         logs=pagination.items,
         pagination=pagination,
         filter_user=filter_user,
-        filter_type=filter_type
+        filter_type=filter_type,
+        log_types=log_types,
     )

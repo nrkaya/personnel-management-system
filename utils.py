@@ -9,7 +9,7 @@ from functools import wraps
 from urllib.parse import urlparse
 from flask import session, redirect, url_for, flash, request, current_app, abort, has_request_context
 from PIL import Image, ImageOps, UnidentifiedImageError
-from sqlalchemy import false, or_
+from sqlalchemy import false
 from werkzeug.security import check_password_hash, generate_password_hash
 from database import db
 from i18n import _
@@ -366,14 +366,34 @@ def login_principal(username, user):
 
 
 def login_lock_minutes(principal):
-    """Minutes left on a lock for this account or this client IP, else 0."""
+    """Minutes left on a lock for this account or this client IP, else 0.
+
+    An account is locked after MAX_LOGIN_ATTEMPTS failures. A whole IP is
+    locked only when its failures across all accounts reach the much higher
+    MAX_IP_LOGIN_ATTEMPTS, so one person mistyping a password behind an
+    office NAT does not lock out colleagues, while password spraying from one
+    address is still stopped.
+    """
     ip = get_client_ip()
     now = utcnow()
-    locked_rows = LoginAttempt.query.filter(
+    lockout = timedelta(minutes=current_app.config.get('LOCKOUT_DURATION_MINUTES', 10))
+    lock_ends = []
+
+    account_rows = LoginAttempt.query.filter(
+        LoginAttempt.kullanici_adi == principal,
         LoginAttempt.kilitli_mi.is_(True),
-        or_(LoginAttempt.kullanici_adi == principal, LoginAttempt.ip_adresi == ip),
     ).all()
-    lock_ends = [as_utc(row.kilit_bitis) for row in locked_rows if row.kilit_bitis is not None]
+    lock_ends += [as_utc(row.kilit_bitis) for row in account_rows if row.kilit_bitis is not None]
+
+    window_start = now - lockout
+    recent_ip_rows = [
+        row for row in LoginAttempt.query.filter(LoginAttempt.ip_adresi == ip).all()
+        if row.son_deneme is not None and as_utc(row.son_deneme) > window_start
+    ]
+    ip_failures = sum(row.deneme_sayisi for row in recent_ip_rows)
+    if recent_ip_rows and ip_failures >= current_app.config.get('MAX_IP_LOGIN_ATTEMPTS', 20):
+        lock_ends.append(max(as_utc(row.son_deneme) for row in recent_ip_rows) + lockout)
+
     active = [end for end in lock_ends if end > now]
     if not active:
         return 0

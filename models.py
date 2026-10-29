@@ -126,6 +126,11 @@ class Izin(db.Model):
         Index('ix_izin_durum_tarih', 'durum', 'baslangic', 'bitis'),
     )
 
+    @property
+    def gun_sayisi(self):
+        """Calendar days covered by the leave, both ends included."""
+        return (self.bitis - self.baslangic).days + 1
+
     def to_dict(self):
         return {
             'id': self.id,

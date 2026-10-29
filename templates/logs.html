@@ -10,7 +10,12 @@
 
 <form method="GET" action="{{ url_for('logs.index') }}" class="glass filter-bar">
     <input type="text" name="user" class="filter-input" placeholder="{{ _('logs_search_user_ph') }}" value="{{ filter_user }}">
-    <input type="text" name="type" class="filter-input" placeholder="{{ _('logs_search_type_ph') }}" value="{{ filter_type }}">
+    <select name="type" class="filter-select" data-autosubmit aria-label="{{ _('logs_th_event') }}">
+        <option value="">{{ _('logs_all_types') }}</option>
+        {% for log_type in log_types %}
+        <option value="{{ log_type }}" {% if filter_type == log_type %}selected{% endif %}>{{ _(log_type) }}</option>
+        {% endfor %}
+    </select>
     <button type="submit" class="btn btn-primary"><i data-lucide="filter"></i> {{ _('logs_btn_filter') }}</button>
     <a href="{{ url_for('logs.index') }}" class="btn btn-outline"><i data-lucide="rotate-ccw"></i> {{ _('logs_btn_clear') }}</a>
 </form>
@@ -46,14 +51,16 @@
     {% endif %}
 </div>
 {% if pagination and pagination.pages > 1 %}
-<nav class="pagination" aria-label="{{ _('logs_title') }}">
-    {% if pagination.has_prev %}
-    <a class="btn btn-outline" href="{{ url_for('logs.index', page=pagination.prev_num, user=filter_user, type=filter_type) }}">{{ _('btn_prev') }}</a>
-    {% endif %}
-    <span class="pagination-info">{{ pagination.page }} / {{ pagination.pages }}</span>
-    {% if pagination.has_next %}
-    <a class="btn btn-outline" href="{{ url_for('logs.index', page=pagination.next_num, user=filter_user, type=filter_type) }}">{{ _('btn_next') }}</a>
-    {% endif %}
+<nav class="glass pagination" aria-label="{{ _('logs_title') }}">
+    <div class="page-info">{{ pagination.page }} / {{ pagination.pages }} · {{ pagination.total }}</div>
+    <div class="pagination-controls">
+        {% if pagination.has_prev %}
+        <a class="page-btn" href="{{ url_for('logs.index', page=pagination.prev_num, user=filter_user, type=filter_type) }}"><i data-lucide="chevron-left"></i> {{ _('btn_prev') }}</a>
+        {% endif %}
+        {% if pagination.has_next %}
+        <a class="page-btn" href="{{ url_for('logs.index', page=pagination.next_num, user=filter_user, type=filter_type) }}">{{ _('btn_next') }} <i data-lucide="chevron-right"></i></a>
+        {% endif %}
+    </div>
 </nav>
 {% endif %}
 {% endblock %}

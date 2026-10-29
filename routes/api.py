@@ -177,6 +177,8 @@ def _validate_personnel(data, partial=False):
             clean[field] = datetime.strptime(value, '%Y-%m-%d').date()
         except ValueError:
             errors[field] = 'YYYY-AA-GG biçiminde geçerli bir tarih olmalıdır.'
+    if clean.get('dogum_tarihi') and clean['dogum_tarihi'] > date.today():
+        errors['dogum_tarihi'] = 'Doğum tarihi gelecekte olamaz.'
     return clean, errors
 
 
@@ -322,7 +324,9 @@ def delete_personel(id):
 @api_key_required('stats:read')
 def get_stats():
     today = date.today()
-    active_leaves = Izin.query.filter(
+    # Same rule as the dashboard: leaves of archived personnel do not count.
+    active_leaves = Izin.query.join(Personel).filter(
+        Personel.aktif_mi.is_(True),
         Izin.durum == 'Onaylandı', Izin.baslangic <= today, Izin.bitis >= today
     ).count()
     return jsonify({

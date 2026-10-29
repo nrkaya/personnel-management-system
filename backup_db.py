@@ -36,8 +36,9 @@ from datetime import datetime
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_BACKUP_DIR = os.environ.get('BACKUP_DIR') or os.path.join(BASE_DIR, 'backups')
 PREFIX = 'kaya_pts_'
-# kaya_pts_<YYYYmmdd_HHMMSS>.db / .dump / _uploads.zip
-BACKUP_NAME = re.compile(rf'^{PREFIX}(\d{{8}}_\d{{6}})(\.db|\.dump|_uploads\.zip)$')
+# kaya_pts_<YYYYmmdd_HHMMSS>.db / .dump / _uploads.zip, plus _uploads.tar.gz
+# from the Docker Compose backup service, so both kinds can be listed and pruned.
+BACKUP_NAME = re.compile(rf'^{PREFIX}(\d{{8}}_\d{{6}})(\.db|\.dump|_uploads\.zip|_uploads\.tar\.gz)$')
 
 
 class BackupError(Exception):

@@ -23,7 +23,7 @@
 <form method="GET" action="{{ url_for('personel.index') }}" class="glass filter-bar" id="filterForm">
     <div class="search-input-wrapper">
         <i data-lucide="search" class="search-icon"></i>
-        <input type="text" name="q" id="liveSearchInput" class="filter-input" placeholder="{{ _('personnel_search_ph') }}" value="{{ search_query }}">
+        <input type="search" name="q" id="liveSearchInput" class="filter-input" autocomplete="off" placeholder="{{ _('personnel_search_ph') }}" value="{{ search_query }}">
     </div>
     
     <select name="departman" class="filter-select" data-autosubmit>
@@ -48,6 +48,8 @@
     </a>
 </form>
 
+{# Replaced in place by the live search in static/js/main.js. #}
+<div data-live-region="results">
 <div class="glass table-container">
     {% if personeller %}
     <table id="personelTable">
@@ -139,6 +141,7 @@
     </div>
 </div>
 {% endif %}
+</div>
 
 {% if can_add %}
 <div class="modal-overlay" id="personnelModal">
@@ -168,13 +171,17 @@
                 <div class="form-group form-col"><label>{{ _('modal_start_date') }}</label><input type="date" name="ise_giris_tarihi" class="form-control"></div>
             </div>
             <div class="form-row">
+                {% if can_view_personal %}
                 <div class="form-group form-col"><label>{{ _('modal_birth_date') }}</label><input type="date" name="dogum_tarihi" class="form-control"></div>
+                {% endif %}
                 <div class="form-group form-col"><label>{{ _('modal_photo') }}</label><input type="file" name="avatar" class="form-control" accept=".png,.jpg,.jpeg,.webp"></div>
             </div>
+            {% if can_view_personal %}
             <div class="form-group">
                 <label>{{ _('modal_notes') }}</label>
                 <textarea name="ek_bilgi" class="form-control" rows="2" placeholder="..."></textarea>
             </div>
+            {% endif %}
             <button type="submit" class="btn btn-primary btn-full"><i data-lucide="check"></i> {{ _('btn_save_personnel') }}</button>
         </form>
         <datalist id="departmentOptions">

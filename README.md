@@ -41,7 +41,7 @@
 - 🏗️ **Modüler Mimari (Flask Blueprints):** 7 bağımsız iş modülü (`auth`, `dashboard`, `personel`, `izin`, `kullanici`, `logs`, `api`).
 - 🔐 **Katmanlı Kurumsal Güvenlik:**
   - **CSRF Koruması:** `Flask-WTF` ile tüm form ve AJAX isteklerinde token doğrulaması.
-  - **Brute-Force & Rate Limiting:** Aynı hesap/IP için art arda 5 hatalı denemede giriş **10 dakika kilitlenir**. Hata mesajı her durumda aynıdır ve bilinmeyen kullanıcı adları da aynı maliyetle doğrulanır; böylece hangi kullanıcı adının var olduğu anlaşılamaz.
+  - **Brute-Force & Rate Limiting:** Bir hesaba art arda 5 hatalı denemede o hesabın girişi **10 dakika kilitlenir**. Aynı IP adresinin girişi ise ancak tüm hesaplarda toplam 20 hatalı denemeden sonra kilitlenir (`MAX_IP_LOGIN_ATTEMPTS`); böylece ortak internet çıkışı kullanan bir ofiste bir kişinin hatası diğerlerini kilitlemez. Hata mesajı her durumda aynıdır ve bilinmeyen kullanıcı adları da aynı maliyetle doğrulanır; böylece hangi kullanıcı adının var olduğu anlaşılamaz.
   - **Şifre Güvenlik Politikası:** En az 12 karakter; büyük/küçük harf, rakam ve özel karakter zorunluluğu. Kullanıcılar kendi şifresini değiştirebilir, Admin şifre sıfırlayabilir.
   - **Güvenli Fotoğraf Yükleme:** Görseller Pillow ile doğrulanıp yeniden kodlanır (EXIF/konum bilgisi silinir), rastgele UUID ile adlandırılır ve herkese açık `static` klasörü yerine `uploads/` altında tutulur; yalnızca giriş yapmış ve o kaydı görmeye yetkili kullanıcılara sunulur.
   - **Güvenli Oturumlar:** `HttpOnly`, `SameSite=Lax`, 8 saat ömür. Çıkış, şifre değişikliği ve hesap pasifleştirme o kullanıcının **tüm** oturum çerezlerini geçersiz kılar.
@@ -53,7 +53,7 @@
 - 📱 **Mobil Uyumlu:** Telefonda yan menü, üst çubuktaki menü butonuyla açılan bir çekmeceye dönüşür.
 - 💾 **Yedekleme:** `backup_db.py` SQLite ve PostgreSQL veritabanını personel fotoğraflarıyla birlikte yedekler; Docker Compose kurulumunda günlük otomatik yedek servisi vardır.
 - ✅ **Sürekli Entegrasyon:** Her push ve pull request'te GitHub Actions testleri çalıştırır ve migration'ların modellerle uyumunu SQLite ve PostgreSQL üzerinde doğrular.
-- ⚡ **Yüksek Performanslı Arayüz:** Sayfa başına 10 personel sayfalama (pagination) ve anlık canlı filtreleme/arama motoru.
+- ⚡ **Yüksek Performanslı Arayüz:** Sayfa başına 20 personel sayfalama (pagination) ve yazarken tüm sayfalarda arayan canlı arama.
 - 📑 **Kurumsal Excel Raporlama:** `openpyxl` ile biçimlendirilmiş, renkli başlıklı `.xlsx` dışa aktarımı.
 - 🌐 **RESTful API v1:** Harici sistem entegrasyonları için `X-API-KEY` korumalı JSON API servisi.
 - 🐳 **DevOps & Docker:** Tek komutla ayağa kalkan `Dockerfile` ve `docker-compose.yml` (PostgreSQL desteğiyle).
@@ -121,7 +121,7 @@ Dockerfile, Render'ın verdiği `$PORT` değişkenini okur, `FLASK_ENV=productio
 | `SECRET_KEY`, `API_KEY` | En az 32 karakterlik, birbirinden farklı rastgele değerler (`python -c "import secrets; print(secrets.token_urlsafe(48))"`). Repoda geçmişte görünen eski anahtarlar uygulama tarafından reddedilir. |
 | `DATABASE_URL` | Render PostgreSQL bağlantı adresi. **SQLite kullanmayın**: Render'ın disk alanı her deploy'da sıfırlanır ve veriler silinir. |
 | `TRUSTED_PROXY_COUNT` | `1` — aksi halde tüm ziyaretçiler proxy'nin IP'sini paylaşır; bir kişinin hatalı girişleri herkesi kilitler. |
-| `RATELIMIT_STORAGE_URI` | Mümkünse Render Key Value (Redis) adresi; `memory://` worker'lar arasında paylaşılmaz. |
+| `RATELIMIT_STORAGE_URI` | Mümkünse Render Key Value (Redis) adresi; `memory://` worker'lar arasında paylaşılmaz. Gerekli `redis` paketi kurulu gelir; Docker Compose ise kendi Redis servisini kullanır. |
 
 Personel fotoğraflarının kalıcı olması için `/app/uploads` yoluna bir Render Persistent Disk bağlayın. İlk yöneticiyi Render Shell'den `flask --app app:create_app create-admin` ile oluşturun.
 

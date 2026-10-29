@@ -372,5 +372,107 @@ class SecurityTestCase(unittest.TestCase):
         self.assertEqual(Log.query.filter_by(kullanici_adi='yeni').count(), 1)
 
 
+    # --- Review follow-ups -----------------------------------------------------
+
+    def test_one_users_failures_do_not_lock_colleagues_on_same_ip(self):
+        for _ in range(5):
+            self.client.post('/login', data={'kullanici_adi': 'ik', 'sifre': 'wrong'})
+        colleague = self.app.test_client()
+        self.assertEqual(self._login(self.muhasebe, colleague).status_code, 302)
+        self.assertIn('kilitlendi', self._text(self._login(self.ik)))
+
+    def test_many_failures_from_one_ip_lock_the_ip(self):
+        self.app.config['MAX_IP_LOGIN_ATTEMPTS'] = 6
+        for index in range(6):
+            self.client.post('/login', data={'kullanici_adi': f'spray{index}', 'sifre': 'wrong'})
+        self.assertIn('kilitlendi', self._text(self._login(self.muhasebe)))
+
+    def test_api_rejects_future_birth_date(self):
+        tomorrow = (date.today() + timedelta(days=1)).isoformat()
+        response = self.client.post('/api/v1/personel', json={'ad': 'A', 'soyad': 'B', 'dogum_tarihi': tomorrow},
+                                    headers={'X-API-KEY': self.app.config['API_KEY']})
+        self.assertEqual(response.status_code, 422)
+        self.assertIn('dogum_tarihi', response.get_json()['fields'])
+
+    def test_api_stats_ignore_archived_personnel(self):
+        for person in (self.sales, self.it):
+            db.session.add(Izin(personel_id=person.id, baslangic=date.today(), bitis=date.today(),
+                                tur='Yıllık İzin', durum='Onaylandı'))
+        self.it.aktif_mi = False
+        db.session.commit()
+        stats = self.client.get('/api/v1/stats', headers={'X-API-KEY': self.app.config['API_KEY']}).get_json()
+        self.assertEqual(stats['data']['aktif_izindekiler'], 1)
+
+    def test_manager_department_must_exist(self):
+        self._login(self.admin)
+        self.client.post(f'/users/edit/{self.mudur.id}', data={'rol': 'Mudur', 'departman': 'Satış Birimi', 'aktif_mi': '1'})
+        db.session.refresh(self.mudur)
+        self.assertEqual(self.mudur.departman, 'Satış')
+        self.client.post(f'/users/edit/{self.mudur.id}', data={'rol': 'Mudur', 'departman': 'IT', 'aktif_mi': '1'})
+        db.session.refresh(self.mudur)
+        self.assertEqual(self.mudur.departman, 'IT')
+
+    def test_birthdays_need_personal_permission(self):
+        today = date.today()
+        self.sales.dogum_tarihi = today.replace(year=2000 if (today.month, today.day) == (2, 29) else 1990)
+        db.session.commit()
+        self._login(self.muhasebe)
+        self.assertNotIn('Satis Kisi', self._text(self.client.get('/dashboard')))
+        self.client.post('/logout')
+        self._login(self.ik)
+        self.assertIn('Satis Kisi', self._text(self.client.get('/dashboard')))
+
+    def test_personal_fields_ignored_without_permission(self):
+        from routes.personel import _clean_personnel_form
+        form = {'ad': 'A', 'soyad': 'B', 'ek_bilgi': 'not', 'dogum_tarihi': '1990-01-01'}
+        with self.app.test_request_context():
+            data = _clean_personnel_form(form, can_set_personal=False)
+            self.assertNotIn('ek_bilgi', data)
+            self.assertNotIn('dogum_tarihi', data)
+            data = _clean_personnel_form(form, can_set_personal=True)
+            self.assertEqual(data['ek_bilgi'], 'not')
+
+    def test_leave_list_shows_days_decision_and_marriage_leave(self):
+        self._login(self.ik)
+        self.client.post(f'/izin/ekle/{self.sales.id}', data={
+            'baslangic': '2026-03-02', 'bitis': '2026-03-04', 'tur': 'Evlilik İzni',
+        })
+        izin = Izin.query.one()
+        self.assertEqual(izin.gun_sayisi, 3)
+        self.client.post(f'/izin/durum/{izin.id}', data={'durum': 'Onaylandı'})
+        page = self._text(self.client.get('/izinler'))
+        self.assertIn('Karar: ik', page)
+        self.assertIn('<td>3</td>', page)
+
+    def test_log_filter_lists_stored_types_and_pages_like_other_lists(self):
+        for _ in range(31):
+            db.session.add(Log(kullanici_adi='x', islem_tipi='Dışa Aktarma', tarih_saat=utcnow()))
+        db.session.commit()
+        self._login(self.admin)
+        page = self._text(self.client.get('/logs'))
+        self.assertIn('<select name="type"', page)
+        self.assertIn('value="Giriş"', page)
+        self.assertIn('glass pagination', page)
+        self.assertIn('page-btn', page)
+
+    def test_excel_and_dashboard_follow_language(self):
+        self._login(self.admin)
+        self.client.get('/lang/en')
+        sheet = load_workbook(io.BytesIO(self.client.get('/export').data)).active
+        self.assertEqual(sheet.title, 'Personnel List')
+        self.assertEqual(sheet['B1'].value, 'First Name')
+        self.assertIn('<span class="log-tag">Login</span>', self._text(self.client.get('/dashboard')))
+
+    def test_live_search_returns_matches_from_every_page(self):
+        for index in range(25):
+            db.session.add(Personel(ad=f'Dolgu{index}', soyad='Kayit', departman='IT', maas=1))
+        db.session.commit()
+        self._login(self.ik)
+        page = self._text(self.client.get('/personeller?q=Satis'))
+        self.assertIn('data-live-region="results"', page)
+        self.assertIn('Satis Kisi', page)
+        self.assertNotIn('Dolgu', page)
+
+
 if __name__ == '__main__':
     unittest.main()

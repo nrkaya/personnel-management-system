@@ -11,7 +11,7 @@ from utils import (
 
 izin_bp = Blueprint('izin', __name__)
 
-LEAVE_TYPES = {'Yıllık İzin', 'Mazeret İzni', 'Hastalık Raporu', 'Ücretsiz İzin', 'Doğum İzni'}
+LEAVE_TYPES = {'Yıllık İzin', 'Mazeret İzni', 'Hastalık Raporu', 'Ücretsiz İzin', 'Doğum İzni', 'Evlilik İzni'}
 LEAVE_STATUSES = {'Beklemede', 'Onaylandı', 'Reddedildi'}
 MAX_REASON_LENGTH = 1000
 PER_PAGE = 30

@@ -46,7 +46,7 @@
 - 🏗️ **Modular Architecture (Flask Blueprints):** 7 decoupled business domain modules (`auth`, `dashboard`, `personel`, `izin`, `kullanici`, `logs`, `api`).
 - 🔐 **Multi-Layer Enterprise Security:**
   - **CSRF Protection:** Token-based request validation across all forms via `Flask-WTF`.
-  - **Brute-Force & Rate Limiting:** Logins are **locked for 10 minutes** after 5 consecutive failures for the same account/IP. Every failure shows the same message and unknown usernames cost the same hashing work, so attackers cannot tell which usernames exist.
+  - **Brute-Force & Rate Limiting:** An account is **locked for 10 minutes** after 5 consecutive failures. An IP address is locked only after 20 failures across all accounts (`MAX_IP_LOGIN_ATTEMPTS`), so behind a shared office connection one person's typos do not lock out colleagues. Every failure shows the same message and unknown usernames cost the same hashing work, so attackers cannot tell which usernames exist.
   - **Strong Password Policy:** At least 12 characters with uppercase and lowercase letters, digits and a special character. Users can change their own password; admins can reset passwords.
   - **Secure Photo Uploads:** Images are verified and re-encoded with Pillow (EXIF/location data is dropped), stored under random UUID names in `uploads/` instead of the public `static` folder, and served only to logged-in users allowed to see that record.
   - **Secure Session Management:** `HttpOnly`, `SameSite=Lax`, 8-hour lifetime. Logout, password changes and deactivation revoke **every** session cookie of that user.
@@ -126,7 +126,7 @@ The Dockerfile reads Render's `$PORT`, starts with `FLASK_ENV=production` and ap
 | `SECRET_KEY`, `API_KEY` | Two different random values of at least 32 characters (`python -c "import secrets; print(secrets.token_urlsafe(48))"`). Keys that once appeared in the repository history are rejected. |
 | `DATABASE_URL` | A Render PostgreSQL URL. **Do not use SQLite**: Render's filesystem is reset on every deploy. |
 | `TRUSTED_PROXY_COUNT` | `1` — otherwise every visitor shares the proxy's IP and one person's failed logins lock everybody out. |
-| `RATELIMIT_STORAGE_URI` | Preferably a Render Key Value (Redis) URL; `memory://` is not shared between workers. |
+| `RATELIMIT_STORAGE_URI` | Preferably a Render Key Value (Redis) URL; `memory://` is not shared between workers. The required `redis` package is installed; Docker Compose uses its own Redis service. |
 
 Attach a Render Persistent Disk at `/app/uploads` so personnel photos survive deploys, and create the first admin from the Render Shell with `flask --app app:create_app create-admin`.
 
@@ -227,12 +227,12 @@ A key without a scope does not see those fields in responses and gets `403` when
 
 ### 4. Update Personnel
 * **PUT** `/api/v1/personel/<id>`
-* **Headers:** `X-API-KEY: kaya-pts-enterprise-api-key-2026`, `Content-Type: application/json`
+* **Headers:** `X-API-KEY: <API_KEY from .env>`, `Content-Type: application/json`
 * **Body (JSON):** `{"maas": 105000, "pozisyon": "Lead Developer"}`
 
 ### 5. Delete Personnel (Soft Delete)
 * **DELETE** `/api/v1/personel/<id>`
-* **Headers:** `X-API-KEY: kaya-pts-enterprise-api-key-2026`
+* **Headers:** `X-API-KEY: <API_KEY from .env>`
 
 ---
 

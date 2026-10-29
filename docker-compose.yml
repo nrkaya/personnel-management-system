@@ -11,8 +11,12 @@ services:
       FLASK_ENV: production
       # Only behind a reverse proxy: set TRUSTED_PROXY_COUNT in .env to its hop count.
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:?Set POSTGRES_USER in .env}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@db:5432/${POSTGRES_DB:?Set POSTGRES_DB in .env}
+      # Rate limits are shared by every gunicorn worker through Redis.
+      RATELIMIT_STORAGE_URI: redis://redis:6379/0
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     volumes:
       # Same named volume as before; photos now live outside the public static folder.
@@ -45,6 +49,19 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+
+  # In-memory store for rate-limit counters; nothing needs to survive a restart.
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    security_opt:
+      - no-new-privileges:true
 
   # Daily database dump plus a photo archive, kept for BACKUP_KEEP_DAYS days.
   # Copy them to the host with: docker compose cp backup:/backups ./backups
