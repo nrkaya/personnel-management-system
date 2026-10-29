@@ -36,13 +36,16 @@ def index():
         Izin.baslangic <= next_14_days
     ), user).order_by(Izin.baslangic.asc()).limit(5).all()
 
-    # Keep this filter in the database rather than loading every employee.
-    birthdays_today = scope_personnel(Personel.query.filter(
-        Personel.aktif_mi == True,
-        Personel.dogum_tarihi.isnot(None),
-        extract('month', Personel.dogum_tarihi) == today.month,
-        extract('day', Personel.dogum_tarihi) == today.day,
-    ), user).all()
+    # A birthday reveals part of the birth date, which only roles with the
+    # 'personal' permission may see. Filter in the database, not in Python.
+    birthdays_today = []
+    if has_permission(user.rol, 'personal'):
+        birthdays_today = scope_personnel(Personel.query.filter(
+            Personel.aktif_mi == True,
+            Personel.dogum_tarihi.isnot(None),
+            extract('month', Personel.dogum_tarihi) == today.month,
+            extract('day', Personel.dogum_tarihi) == today.day,
+        ), user).all()
 
     # Department distribution for Chart.js
     dept_stats = db.session.query(

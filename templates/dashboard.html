@@ -56,6 +56,7 @@
     </div>
 
     <div class="bento-box info-box">
+        {% if can_view_personal %}
         <h3 class="section-heading"><i data-lucide="cake"></i> {{ _('dash_birthdays_leaves') }}</h3>
         
         <div class="dashboard-sub-section">
@@ -76,8 +77,11 @@
                 <p class="text-muted-sm">{{ _('dash_no_birthdays') }}</p>
             {% endif %}
         </div>
+        {% else %}
+        <h3 class="section-heading"><i data-lucide="calendar-clock"></i> {{ _('dash_leaves_box') }}</h3>
+        {% endif %}
 
-        <div class="dashboard-sub-section mt-4">
+        <div class="dashboard-sub-section {% if can_view_personal %}mt-4{% endif %}">
             <h4 class="sub-heading"><i data-lucide="calendar-clock" class="icon-inline"></i> {{ _('dash_upcoming_leaves') }}</h4>
             {% if upcoming_leaves %}
                 <ul class="activity-list">
@@ -85,7 +89,7 @@
                     <li class="activity-item">
                         <i data-lucide="clock" class="activity-icon-sm"></i>
                         <div>
-                            <div class="activity-text"><strong>{{ l.personel.tam_ad if l.personel else '-' }}</strong> - {{ l.tur }}</div>
+                            <div class="activity-text"><strong>{{ l.personel.tam_ad if l.personel else '-' }}</strong> - {{ _(l.tur) }}</div>
                             <div class="activity-meta">{{ l.baslangic.strftime('%d.%m.%Y') }} - {{ l.bitis.strftime('%d.%m.%Y') }}</div>
                         </div>
                     </li>
@@ -110,7 +114,7 @@
             <li class="recent-item">
                 <div class="recent-item-meta">
                     <span class="log-user">{{ log.kullanici_adi }}</span>
-                    <span class="log-tag">{{ log.islem_tipi }}</span>
+                    <span class="log-tag">{{ _(log.islem_tipi) }}</span>
                 </div>
                 <div class="recent-item-text">{{ log.detay }}</div>
                 <div class="recent-item-time">{{ log.tarih_saat.strftime('%d.%m.%Y %H:%M') if log.tarih_saat else '-' }}</div>

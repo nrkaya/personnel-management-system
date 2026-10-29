@@ -45,8 +45,10 @@ class Config:
     WTF_CSRF_ENABLED = True
     WTF_CSRF_TIME_LIMIT = int(PERMANENT_SESSION_LIFETIME.total_seconds())
 
-    # Rate limiting & brute force protection
+    # Rate limiting & brute force protection. MAX_LOGIN_ATTEMPTS locks one
+    # account; MAX_IP_LOGIN_ATTEMPTS (failures across all accounts) locks an IP.
     MAX_LOGIN_ATTEMPTS = 5
+    MAX_IP_LOGIN_ATTEMPTS = int(os.environ.get('MAX_IP_LOGIN_ATTEMPTS', '20'))
     LOCKOUT_DURATION_MINUTES = 10
 
     # Reverse proxies must be explicitly opted into before forwarded headers

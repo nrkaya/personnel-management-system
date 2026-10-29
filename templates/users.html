@@ -85,10 +85,6 @@
     </table>
 </div>
 
-<datalist id="userDepartmentOptions">
-    {% for dept in departments %}<option value="{{ dept }}">{% endfor %}
-</datalist>
-
 <div class="modal-overlay" id="userModal">
     <div class="glass modal modal-sm">
         <div class="modal-header">
@@ -126,7 +122,10 @@
                 </div>
                 <div class="form-group form-col">
                     <label>{{ _('users_field_department') }}</label>
-                    <input type="text" name="departman" class="form-control" maxlength="100" list="userDepartmentOptions">
+                    <select name="departman" class="form-control">
+                        <option value="">—</option>
+                        {% for dept in departments %}<option value="{{ dept }}">{{ dept }}</option>{% endfor %}
+                    </select>
                 </div>
             </div>
             <small class="form-help-text form-help-block">{{ _('users_department_hint') }}</small>
@@ -162,7 +161,10 @@
                 </div>
                 <div class="form-group form-col">
                     <label>{{ _('users_field_department') }}</label>
-                    <input type="text" name="departman" class="form-control" maxlength="100" list="userDepartmentOptions">
+                    <select name="departman" class="form-control">
+                        <option value="">—</option>
+                        {% for dept in departments %}<option value="{{ dept }}">{{ dept }}</option>{% endfor %}
+                    </select>
                 </div>
             </div>
             <label class="checkbox-row">

@@ -46,14 +46,16 @@ class BackupTestCase(unittest.TestCase):
     def test_prune_keeps_newest_backup_sets(self):
         os.makedirs(self.backup_dir)
         for stamp in ('20260101_000000', '20260102_000000', '20260103_000000'):
-            for suffix in ('.dump', '_uploads.zip'):
+            # .tar.gz photo archives come from the Docker Compose backup service.
+            for suffix in ('.dump', '_uploads.zip', '_uploads.tar.gz'):
                 open(os.path.join(self.backup_dir, f'kaya_pts_{stamp}{suffix}'), 'w').close()
         open(os.path.join(self.backup_dir, 'notlarim.txt'), 'w').close()
 
         backup_db.prune_backups(self.backup_dir, keep=1)
 
         self.assertEqual(sorted(os.listdir(self.backup_dir)), [
-            'kaya_pts_20260103_000000.dump', 'kaya_pts_20260103_000000_uploads.zip', 'notlarim.txt',
+            'kaya_pts_20260103_000000.dump', 'kaya_pts_20260103_000000_uploads.tar.gz',
+            'kaya_pts_20260103_000000_uploads.zip', 'notlarim.txt',
         ])
 
     def test_postgres_without_pg_dump_is_an_error(self):

@@ -8,6 +8,7 @@
 //   data-print             prints the page
 //   data-sidebar-toggle /
 //   data-sidebar-close     open and close the mobile navigation drawer
+//   data-live-region       content refreshed by the live search (#liveSearchInput)
 
 function openModal(id, opener) {
     const overlay = document.getElementById(id);
@@ -56,6 +57,49 @@ function setSidebarOpen(open) {
     document.body.classList.toggle("sidebar-open", open);
     document.querySelectorAll("[data-sidebar-toggle]").forEach((button) => {
         button.setAttribute("aria-expanded", String(open));
+    });
+}
+
+// Search all pages while typing: fetch the server-rendered list for the form's
+// current values and swap in its [data-live-region] blocks (table and paging).
+function setupLiveSearch() {
+    const input = document.getElementById("liveSearchInput");
+    if (!input || !input.form) {
+        return;
+    }
+    let timer = null;
+    let controller = null;
+    input.addEventListener("input", () => {
+        clearTimeout(timer);
+        timer = setTimeout(async () => {
+            const params = new URLSearchParams(new FormData(input.form));
+            const url = `${input.form.action}?${params}`;
+            if (controller) {
+                controller.abort();
+            }
+            controller = new AbortController();
+            try {
+                const response = await fetch(url, { signal: controller.signal });
+                if (!response.ok) {
+                    return;
+                }
+                const page = new DOMParser().parseFromString(await response.text(), "text/html");
+                document.querySelectorAll("[data-live-region]").forEach((region) => {
+                    const fresh = page.querySelector(`[data-live-region="${region.dataset.liveRegion}"]`);
+                    if (fresh) {
+                        region.replaceWith(fresh);
+                    }
+                });
+                window.history.replaceState(null, "", url);
+                if (window.lucide) {
+                    lucide.createIcons();
+                }
+            } catch (error) {
+                if (error.name !== "AbortError") {
+                    throw error;
+                }
+            }
+        }, 300);
     });
 }
 
@@ -160,23 +204,7 @@ document.addEventListener("DOMContentLoaded", () => {
         openModal("personnelModal");
     }
 
-    // Client-side quick search filtering
-    const liveSearchInput = document.getElementById("liveSearchInput");
-    const personelRows = document.querySelectorAll(".personel-row");
-
-    if (liveSearchInput && personelRows.length > 0) {
-        liveSearchInput.addEventListener("input", (e) => {
-            const query = e.target.value.toLowerCase().trim();
-            personelRows.forEach((row) => {
-                const text = row.innerText.toLowerCase();
-                if (text.includes(query)) {
-                    row.style.display = "";
-                } else {
-                    row.style.display = "none";
-                }
-            });
-        });
-    }
+    setupLiveSearch();
 
     // Auto-dismiss toast notifications
     const flashes = document.querySelectorAll(".flash-message");

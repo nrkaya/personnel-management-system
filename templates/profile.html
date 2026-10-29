@@ -73,6 +73,7 @@
                 <thead>
                     <tr>
                         <th>{{ _('leaves_th_start') }} - {{ _('leaves_th_end') }}</th>
+                        <th>{{ _('leaves_th_days') }}</th>
                         <th>{{ _('leaves_th_type') }}</th>
                         <th>{{ _('leaves_th_status') }}</th>
                         {% if can_view_leave_reason %}
@@ -87,11 +88,15 @@
                     {% for izin in izinler %}
                     <tr>
                         <td><strong>{{ izin.baslangic.strftime('%d.%m.%Y') }}</strong> - {{ izin.bitis.strftime('%d.%m.%Y') }}</td>
+                        <td>{{ izin.gun_sayisi }}</td>
                         <td><span class="badge badge-info">{{ _(izin.tur) }}</span></td>
                         <td>
                             <span class="status-badge-{{ 'active' if izin.durum == 'Onaylandı' else 'inactive' }}">
                                 {{ _(izin.durum) }}
                             </span>
+                            {% if izin.onaylayan_kullanici_adi %}
+                            <div class="personnel-date">{{ _('leaves_decided_by', name=izin.onaylayan_kullanici_adi, date=izin.karar_tarihi.strftime('%d.%m.%Y') if izin.karar_tarihi else '-') }}</div>
+                            {% endif %}
                         </td>
                         {% if can_view_leave_reason %}
                         <td>{{ izin.aciklama or '-' }}</td>
@@ -150,13 +155,17 @@
                 <div class="form-group form-col"><label>{{ _('modal_start_date') }}</label><input type="date" name="ise_giris_tarihi" class="form-control" value="{{ p.ise_giris_tarihi.strftime('%Y-%m-%d') if p.ise_giris_tarihi else '' }}"></div>
             </div>
             <div class="form-row">
+                {% if can_view_personal %}
                 <div class="form-group form-col"><label>{{ _('modal_birth_date') }}</label><input type="date" name="dogum_tarihi" class="form-control" value="{{ p.dogum_tarihi.strftime('%Y-%m-%d') if p.dogum_tarihi else '' }}"></div>
+                {% endif %}
                 <div class="form-group form-col"><label>{{ _('modal_photo') }}</label><input type="file" name="avatar" class="form-control" accept=".png,.jpg,.jpeg,.webp"></div>
             </div>
+            {% if can_view_personal %}
             <div class="form-group">
                 <label>{{ _('modal_notes') }}</label>
                 <textarea name="ek_bilgi" class="form-control" rows="3">{{ p.ek_bilgi or '' }}</textarea>
             </div>
+            {% endif %}
             <button type="submit" class="btn btn-primary btn-full"><i data-lucide="check"></i> {{ _('profile_btn_save_changes') }}</button>
         </form>
     </div>
@@ -188,6 +197,7 @@
                     <option value="Hastalık Raporu">{{ _('leaves_type_sick') }}</option>
                     <option value="Ücretsiz İzin">{{ _('leaves_type_unpaid') }}</option>
                     <option value="Doğum İzni">{{ _('leaves_type_maternity') }}</option>
+                    <option value="Evlilik İzni">{{ _('leaves_type_marriage') }}</option>
                 </select>
             </div>
             <div class="form-group">

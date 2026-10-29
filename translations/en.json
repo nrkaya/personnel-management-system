@@ -187,7 +187,7 @@
   "login_field_username": "Username",
   "login_field_password": "Password",
   "login_btn_submit": "Sign In to System",
-  "login_lockout_warning": "Account will be locked for 10 minutes after 5 failed attempts.",
+  "login_lockout_warning": "After 5 failed attempts an account is locked for 10 minutes.",
   "login_footer_sec": "Protected by 256-Bit SSL encryption and enterprise rate limiting.",
 
   "err_400_title": "Bad Request (400)",
@@ -340,5 +340,13 @@
   "API Personel Güncellendi": "API Personnel Updated",
   "API Personel Silindi": "API Personnel Deleted",
   "nav_open_menu": "Open menu",
-  "nav_close_menu": "Close menu"
+  "nav_close_menu": "Close menu",
+  "msg_department_unknown": "The selected department is not used by any personnel record. Pick one from the list.",
+  "dash_leaves_box": "Upcoming Leaves",
+  "leaves_decided_by": "Decision: {name}, {date}",
+  "leaves_requested_by": "Requested: {name}, {date}",
+  "logs_all_types": "All Event Types",
+  "export_sheet_title": "Personnel List",
+  "export_file_name": "Personnel_List",
+  "Evlilik İzni": "Marriage Leave"
 }

@@ -34,10 +34,12 @@ def _clean_account_fields(form, rol):
         raise ValueError(_('msg_fullname_too_long'))
     if len(email) > 120 or not validate_email(email):
         raise ValueError(_('msg_invalid_email'))
-    if len(departman) > 100:
-        raise ValueError(_('msg_field_too_long', field=_('users_field_department'), max=100))
     if rol == 'Mudur' and not departman:
         raise ValueError(_('msg_manager_needs_department'))
+    # Managers are scoped by an exact department match, so only accept names
+    # that personnel records really use; a typo would leave them seeing nobody.
+    if rol == 'Mudur' and departman not in _department_choices():
+        raise ValueError(_('msg_department_unknown'))
     # Only department managers are scoped; keep the field empty for others.
     return ad_soyad or None, email or None, (departman if rol == 'Mudur' else None)
 

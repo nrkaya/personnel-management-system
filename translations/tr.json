@@ -187,7 +187,7 @@
   "login_field_username": "Kullanıcı Adı",
   "login_field_password": "Şifre",
   "login_btn_submit": "Sisteme Giriş Yap",
-  "login_lockout_warning": "Art arda 5 hatalı denemeden sonra giriş 10 dakika kilitlenir.",
+  "login_lockout_warning": "Bir hesaba art arda 5 hatalı denemeden sonra o hesabın girişi 10 dakika kilitlenir.",
   "login_footer_sec": "Sistem 256-Bit SSL şifreleme ve gelişmiş rate limiting ile korunmaktadır.",
 
   "err_400_title": "Geçersiz İstek (400)",
@@ -325,5 +325,12 @@
   "msg_leave_status_updated": "İzin durumu {status} olarak güncellendi.",
   "msg_leave_deleted": "İzin kaydı silindi.",
   "nav_open_menu": "Menüyü aç",
-  "nav_close_menu": "Menüyü kapat"
+  "nav_close_menu": "Menüyü kapat",
+  "msg_department_unknown": "Seçilen departman personel kayıtlarında bulunmuyor. Listeden bir departman seçin.",
+  "dash_leaves_box": "Yaklaşan İzinler",
+  "leaves_decided_by": "Karar: {name}, {date}",
+  "leaves_requested_by": "Talep: {name}, {date}",
+  "logs_all_types": "Tüm İşlem Türleri",
+  "export_sheet_title": "Personel Listesi",
+  "export_file_name": "Personel_Listesi"
 }
