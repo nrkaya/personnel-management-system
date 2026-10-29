@@ -3,25 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ _('app_brand') }} - {{ _('app_subtitle') }}</title>
-    
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
+
+    <!-- Third-party assets are self-hosted (static/vendor): no visitor data goes to CDNs. -->
+    <script src="{{ url_for('static', filename='vendor/lucide/lucide.min.js') }}" defer></script>
+    {% if request.endpoint == 'dashboard.index' %}
+    <script src="{{ url_for('static', filename='vendor/chartjs/chart.umd.js') }}" defer></script>
+    {% endif %}
+
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body class="{% if not session.get('kullanici_adi') %}login-body{% endif %}">
+<body class="{% if not current_user %}login-body{% endif %}">
 
-    {% if session.get('kullanici_adi') %}
+    {% if current_user %}
     <div class="app-container">
         <!-- Sidebar -->
         <aside class="sidebar">
@@ -52,12 +47,14 @@
                         <span>{{ _('nav_leaves') }}</span>
                     </a>
                 </li>
+                {% if can_export %}
                 <li class="nav-item">
                     <a href="{{ url_for('personel.export_excel') }}" class="nav-link">
                         <i data-lucide="file-spreadsheet"></i>
                         <span>{{ _('nav_excel') }}</span>
                     </a>
                 </li>
+                {% endif %}
                 
                 {% if can_manage_users or can_view_logs or can_view_trash %}
                 <li class="nav-item nav-section-title-wrapper">
@@ -104,16 +101,23 @@
                 </div>
 
                 <div class="user-profile-summary">
-                    <div class="user-avatar-badge">{{ session.get('kullanici_adi', 'K')[0]|upper }}</div>
+                    <div class="user-avatar-badge">{{ current_user.kullanici_adi[0]|upper }}</div>
                     <div>
-                        <p class="user-name">{{ session['kullanici_adi'] }}</p>
-                        <p class="user-role-badge">{{ _('nav_role') }}: {{ session.get('rol', 'Personel') }}</p>
+                        <p class="user-name">{{ current_user.kullanici_adi }}</p>
+                        <p class="user-role-badge">{{ _('nav_role') }}: {{ current_user.rol }}{% if current_user.departman %} · {{ current_user.departman }}{% endif %}</p>
                     </div>
                 </div>
-                <a href="{{ url_for('auth.logout') }}" class="btn btn-outline btn-logout">
-                    <i data-lucide="log-out"></i>
-                    <span>{{ _('nav_logout') }}</span>
+                <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline btn-account {% if request.endpoint == 'auth.change_password' %}active{% endif %}">
+                    <i data-lucide="key-round"></i>
+                    <span>{{ _('nav_change_password') }}</span>
                 </a>
+                <form method="POST" action="{{ url_for('auth.logout') }}" class="logout-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-outline btn-logout">
+                        <i data-lucide="log-out"></i>
+                        <span>{{ _('nav_logout') }}</span>
+                    </button>
+                </form>
             </div>
         </aside>
 
@@ -132,7 +136,14 @@
                     {% endif %}
                 {% endwith %}
             </div>
-            
+
+            {% if department_missing %}
+            <div class="glass notice-banner">
+                <i data-lucide="info"></i>
+                <span>{{ _('msg_manager_department_missing') }}</span>
+            </div>
+            {% endif %}
+
             {% block content %}{% endblock %}
         </main>
     </div>
@@ -153,10 +164,7 @@
         {% block login_content %}{% endblock %}
     {% endif %}
 
-    <!-- Custom JavaScript -->
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-    <script>
-        lucide.createIcons();
-    </script>
+    <!-- Custom JavaScript (no inline scripts: the CSP only allows files from this site) -->
+    <script src="{{ url_for('static', filename='js/main.js') }}" defer></script>
 </body>
 </html>

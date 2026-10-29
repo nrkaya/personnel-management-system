@@ -11,9 +11,9 @@
             <i data-lucide="users"></i> {{ _('dash_view_personnel') }}
         </a>
         {% if can_add_personnel %}
-        <button class="btn btn-primary" onclick="openAddModal()">
+        <a href="{{ url_for('personel.index') }}#yeni-personel" class="btn btn-primary">
             <i data-lucide="user-plus"></i> {{ _('dash_new_personnel') }}
-        </button>
+        </a>
         {% endif %}
     </div>
 </div>
@@ -64,10 +64,10 @@
                 <ul class="activity-list">
                 {% for b in birthdays_today %}
                     <li class="activity-item">
-                        <img src="{{ url_for('static', filename='uploads/' + (b.avatar_path or 'default.png')) }}" class="micro-avatar" alt="avatar">
+                        <img src="{{ avatar_url(b) }}" class="micro-avatar" alt="avatar">
                         <div>
                             <div class="activity-text"><strong>{{ b.tam_ad }}</strong> ({{ b.departman or '-' }})</div>
-                            <div class="activity-meta">Mutlu Yıllar!</div>
+                            <div class="activity-meta">{{ _('dash_happy_birthday') }}</div>
                         </div>
                     </li>
                 {% endfor %}
@@ -97,6 +97,7 @@
         </div>
     </div>
 
+    {% if can_view_logs %}
     <div class="bento-box recent-box">
         <div class="card-header-flex">
             <h3 class="section-heading"><i data-lucide="activity"></i> {{ _('dash_recent_activity') }}</h3>
@@ -119,47 +120,13 @@
             {% endfor %}
         </ul>
     </div>
+    {% endif %}
 </div>
 
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const ctx = document.getElementById('deptChart');
-        if (ctx) {
-            const deptData = {
-                labels: [{% for d in dept_stats %}"{{ d.departman }}",{% endfor %}],
-                datasets: [{
-                    label: 'Personel Sayısı',
-                    data: [{% for d in dept_stats %}{{ d.count }},{% endfor %}],
-                    backgroundColor: [
-                        'rgba(59, 130, 246, 0.85)',
-                        'rgba(139, 92, 246, 0.85)',
-                        'rgba(236, 72, 153, 0.85)',
-                        'rgba(16, 185, 129, 0.85)',
-                        'rgba(245, 158, 11, 0.85)',
-                        'rgba(14, 165, 233, 0.85)'
-                    ],
-                    borderColor: 'rgba(255, 255, 255, 0.1)',
-                    borderWidth: 2,
-                    hoverOffset: 6
-                }]
-            };
-
-            new Chart(ctx, {
-                type: 'doughnut',
-                data: deptData,
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: { color: '#a1a1aa', font: { family: 'Inter', size: 12 } }
-                        }
-                    },
-                    cutout: '65%'
-                }
-            });
-        }
-    });
-</script>
+{# Read by static/js/main.js; a JSON block is data, so the CSP needs no inline script. #}
+<script type="application/json" id="deptChartData">{{ {
+    'labels': dept_stats | map(attribute='departman') | list,
+    'counts': dept_stats | map(attribute='count') | list,
+    'label': _('dash_chart_personnel_count'),
+} | tojson }}</script>
 {% endblock %}

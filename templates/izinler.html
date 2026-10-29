@@ -9,7 +9,7 @@
 </div>
 
 <form method="GET" action="{{ url_for('izin.index') }}" class="glass filter-bar">
-    <select name="tur" class="filter-select">
+    <select name="tur" class="filter-select" data-autosubmit>
         <option value="">{{ _('leaves_all_types') }}</option>
         <option value="Yıllık İzin" {% if filter_tur == 'Yıllık İzin' %}selected{% endif %}>{{ _('leaves_type_annual') }}</option>
         <option value="Mazeret İzni" {% if filter_tur == 'Mazeret İzni' %}selected{% endif %}>{{ _('leaves_type_other') }}</option>
@@ -18,7 +18,7 @@
         <option value="Doğum İzni" {% if filter_tur == 'Doğum İzni' %}selected{% endif %}>{{ _('leaves_type_maternity') }}</option>
     </select>
 
-    <select name="durum" class="filter-select">
+    <select name="durum" class="filter-select" data-autosubmit>
         <option value="">{{ _('leaves_all_statuses') }}</option>
         <option value="Onaylandı" {% if filter_durum == 'Onaylandı' %}selected{% endif %}>{{ _('leaves_status_approved') }}</option>
         <option value="Beklemede" {% if filter_durum == 'Beklemede' %}selected{% endif %}>{{ _('leaves_status_pending') }}</option>
@@ -39,8 +39,10 @@
                 <th>{{ _('leaves_th_start') }} - {{ _('leaves_th_end') }}</th>
                 <th>{{ _('leaves_th_type') }}</th>
                 <th>{{ _('leaves_th_status') }}</th>
+                {% if can_view_leave_reason %}
                 <th>{{ _('leaves_th_reason') }}</th>
-                {% if can_manage %}
+                {% endif %}
+                {% if can_manage_leaves %}
                 <th class="text-right">{{ _('leaves_th_actions') }}</th>
                 {% endif %}
             </tr>
@@ -49,28 +51,30 @@
             {% for i in izinler %}
             <tr>
                 <td class="personnel-cell">
-                    <img src="{{ url_for('static', filename='uploads/' + (i.personel.avatar_path if i.personel else 'default.png')) }}" class="table-avatar" alt="avatar" onerror="this.src='/static/uploads/default.png'">
+                    <img src="{{ avatar_url(i.personel) }}" class="table-avatar" alt="avatar" loading="lazy">
                     <div>
                         <a href="{{ url_for('personel.profile', id=i.personel_id) }}" class="personnel-name">
-                            {{ i.personel.tam_ad if i.personel else 'Silinmiş Personel' }}
+                            {{ i.personel.tam_ad if i.personel else _('deleted_personnel') }}
                         </a>
                         <div class="personnel-date">{{ i.eklenme_tarihi.strftime('%d.%m.%Y') if i.eklenme_tarihi else '-' }}</div>
                     </div>
                 </td>
                 <td><span class="dept-badge">{{ i.personel.departman if i.personel else '-' }}</span></td>
                 <td><strong>{{ i.baslangic.strftime('%d.%m.%Y') }}</strong> - {{ i.bitis.strftime('%d.%m.%Y') }}</td>
-                <td><span class="badge badge-info">{{ i.tur }}</span></td>
+                <td><span class="badge badge-info">{{ _(i.tur) }}</span></td>
                 <td>
                     <span class="status-badge-{{ 'active' if i.durum == 'Onaylandı' else ('warning' if i.durum == 'Beklemede' else 'inactive') }}">
-                        {{ i.durum }}
+                        {{ _(i.durum) }}
                     </span>
                 </td>
+                {% if can_view_leave_reason %}
                 <td>{{ i.aciklama or '-' }}</td>
-                {% if can_manage %}
+                {% endif %}
+                {% if can_manage_leaves %}
                 <td class="text-right">
                     <form action="{{ url_for('izin.durum_guncelle', id=i.id) }}" method="POST" class="inline-form">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <select name="durum" class="select-sm" onchange="this.form.submit()">
+                        <select name="durum" class="select-sm" data-autosubmit aria-label="{{ _('leaves_th_status') }}">
                             <option value="Onaylandı" {% if i.durum == 'Onaylandı' %}selected{% endif %}>{{ _('leaves_btn_approve') }}</option>
                             <option value="Beklemede" {% if i.durum == 'Beklemede' %}selected{% endif %}>{{ _('leaves_status_pending') }}</option>
                             <option value="Reddedildi" {% if i.durum == 'Reddedildi' %}selected{% endif %}>{{ _('leaves_btn_reject') }}</option>
@@ -90,4 +94,17 @@
     </div>
     {% endif %}
 </div>
+{% if pagination and pagination.pages > 1 %}
+<nav class="glass pagination" aria-label="{{ _('leaves_title') }}">
+    <div class="page-info">{{ pagination.page }} / {{ pagination.pages }} · {{ pagination.total }}</div>
+    <div class="pagination-controls">
+        {% if pagination.has_prev %}
+        <a class="page-btn" href="{{ url_for('izin.index', page=pagination.prev_num, tur=filter_tur, durum=filter_durum) }}"><i data-lucide="chevron-left"></i> {{ _('btn_prev') }}</a>
+        {% endif %}
+        {% if pagination.has_next %}
+        <a class="page-btn" href="{{ url_for('izin.index', page=pagination.next_num, tur=filter_tur, durum=filter_durum) }}">{{ _('btn_next') }} <i data-lucide="chevron-right"></i></a>
+        {% endif %}
+    </div>
+</nav>
+{% endif %}
 {% endblock %}

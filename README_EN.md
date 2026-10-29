@@ -45,11 +45,13 @@
 - 🏗️ **Modular Architecture (Flask Blueprints):** 7 decoupled business domain modules (`auth`, `dashboard`, `personel`, `izin`, `kullanici`, `logs`, `api`).
 - 🔐 **Multi-Layer Enterprise Security:**
   - **CSRF Protection:** Token-based request validation across all forms via `Flask-WTF`.
-  - **Brute-Force & Rate Limiting:** Accounts and IP addresses are **automatically locked for 10 minutes** after 5 consecutive failed login attempts.
-  - **Strong Password Policy:** Strict enforcement requiring a minimum of 8 characters, uppercase and lowercase letters, and digits.
-  - **Secure File & Avatar Uploads:** Only validated MIME types (`image/png`, `image/jpeg`, `image/webp`) and safe extensions are permitted. Uploaded files are renamed using secure random UUIDs to prevent path traversal attacks.
-  - **Secure Session Management:** `HttpOnly`, `SameSite=Lax`, and `PermanentSessionLifetime` (8 hours).
-  - **Comprehensive Audit Logging:** Non-repudiable logs capture user actions, event types, IP addresses, and timestamps.
+  - **Brute-Force & Rate Limiting:** Logins are **locked for 10 minutes** after 5 consecutive failures for the same account/IP. Every failure shows the same message and unknown usernames cost the same hashing work, so attackers cannot tell which usernames exist.
+  - **Strong Password Policy:** At least 12 characters with uppercase and lowercase letters, digits and a special character. Users can change their own password; admins can reset passwords.
+  - **Secure Photo Uploads:** Images are verified and re-encoded with Pillow (EXIF/location data is dropped), stored under random UUID names in `uploads/` instead of the public `static` folder, and served only to logged-in users allowed to see that record.
+  - **Secure Session Management:** `HttpOnly`, `SameSite=Lax`, 8-hour lifetime. Logout, password changes and deactivation revoke **every** session cookie of that user.
+  - **Strict Content Security Policy:** No inline scripts; Lucide, Chart.js and the Inter font are served from `static/vendor`, so no visitor data reaches third-party CDNs.
+  - **Comprehensive Audit Logging:** Logs capture user actions, event types, IP addresses and timestamps; `flask purge-logs` applies a retention period.
+  - **Spreadsheet Formula Injection Protection:** Values starting with `=`, `+`, `-` or `@` are exported as plain text.
 - 👥 **4-Tier Role-Based Access Control (RBAC):** `Admin`, `IK` (HR), `Mudur` (Manager), `Muhasebe` (Accounting).
 - 📊 **Bento Grid Dashboard:** Chart.js department distribution charts, birthday reminders, and upcoming leave tracking widgets.
 - ⚡ **High-Performance UI:** Paginated tables (10 records/page) and instantaneous client-side search and filtering.
@@ -64,14 +66,20 @@
 | Feature / Action | 👑 Admin | 💼 IK (Human Resources) | 👔 Mudur (Manager) | 💰 Muhasebe (Accounting) |
 | :--- | :---: | :---: | :---: | :---: |
 | **Login & Dashboard** | ✅ | ✅ | ✅ | ✅ |
-| **View Personnel List** | ✅ | ✅ | ✅ | ✅ |
+| **View Personnel List** | ✅ | ✅ | 🔸 own department | ✅ |
 | **Create / Edit Personnel** | ✅ | ✅ | ❌ | ❌ |
 | **Delete Personnel & Trash Bin** | ✅ | ✅ | ❌ | ❌ |
+| **Permanently Delete from Trash** | ✅ | ❌ | ❌ | ❌ |
 | **View Salary Information** | ✅ | ✅ | ❌ | ✅ |
-| **Approve / Reject Leaves** | ✅ | ✅ | ✅ | ❌ |
-| **Export Excel Reports** | ✅ | ✅ | ✅ | ✅ |
+| **Birth Date & Dossier Notes** | ✅ | ✅ | ❌ | ❌ |
+| **Request / Approve / Reject Leaves** | ✅ | ✅ | 🔸 own department | ❌ |
+| **View Leave Reasons** | ✅ | ✅ | 🔸 own department | ❌ |
+| **Delete Leave Records** | ✅ | ✅ | ❌ | ❌ |
+| **Export Excel Reports** | ✅ | ✅ | 🔸 own department | ✅ |
 | **User & Role Management** | ✅ | ❌ | ❌ | ❌ |
 | **System Audit Logs** | ✅ | ❌ | ❌ | ❌ |
+
+> Manager accounts are bound to a department (assigned in User Management); a manager without a department sees no personnel records. Permissions come from a single matrix (`ROLE_HIERARCHY` in `utils.py`) and buttons appear only when the action is allowed.
 
 ---
 
@@ -80,19 +88,21 @@
 ### Method 1: Local Setup (Development Mode - SQLite)
 
 1. **Prerequisites:** Python 3.10+
-2. **Navigate and Start the Virtual Environment:**
+2. **Prepare the environment and secrets:**
    ```powershell
-   # Navigate to the project directory
    cd C:\Users\Muhammed\Desktop\personelsistemi
-
-   # Launch the application
+   Copy-Item .env.example .env
+   # Replace the SECRET_KEY and API_KEY placeholders in .env with unique values.
+   .\venv\Scripts\python -m pip install -r requirements.txt
+   .\venv\Scripts\flask --app app:create_app db upgrade
+   .\venv\Scripts\flask --app app:create_app create-admin
    .\venv\Scripts\python app.py
    ```
 3. **Open in Browser:**
    👉 **`http://127.0.0.1:5000`**
-4. **Default Administrator Credentials:**
-   - **Username:** `admin`
-   - **Password:** `Admin123!`
+4. The administrator account is created only through `create-admin`; no default credentials are embedded in the application.
+
+> **Upgrade note:** this release adds a database migration — run `flask --app app:create_app db upgrade` after updating. Session cookies are now versioned, so every user signs in once more. Photos uploaded to `static/uploads/` by older versions move to `uploads/` automatically the first time they are opened.
 
 ---
 
@@ -101,18 +111,49 @@
 ```bash
 docker-compose up --build -d
 ```
-> Spawns both the web service and the PostgreSQL container ready at (`http://localhost:5000`).
+> First copy `.env.example` to `.env` and replace all secret and PostgreSQL placeholders. PostgreSQL is not exposed to the host; the application listens on `127.0.0.1:5000` for a TLS reverse proxy. The image applies migrations on start (`flask db upgrade`). Behind a reverse proxy set `TRUSTED_PROXY_COUNT=1` in `.env`.
+
+### Method 3: Render (or a similar PaaS)
+
+The Dockerfile reads Render's `$PORT`, starts with `FLASK_ENV=production` and applies migrations on every deploy. Environment variables:
+
+| Variable | Value |
+| :--- | :--- |
+| `SECRET_KEY`, `API_KEY` | Two different random values of at least 32 characters (`python -c "import secrets; print(secrets.token_urlsafe(48))"`). Keys that once appeared in the repository history are rejected. |
+| `DATABASE_URL` | A Render PostgreSQL URL. **Do not use SQLite**: Render's filesystem is reset on every deploy. |
+| `TRUSTED_PROXY_COUNT` | `1` — otherwise every visitor shares the proxy's IP and one person's failed logins lock everybody out. |
+| `RATELIMIT_STORAGE_URI` | Preferably a Render Key Value (Redis) URL; `memory://` is not shared between workers. |
+
+Attach a Render Persistent Disk at `/app/uploads` so personnel photos survive deploys, and create the first admin from the Render Shell with `flask --app app:create_app create-admin`.
+
+### Maintenance: log retention
+
+Audit logs contain names and IP addresses. Apply the retention period regularly (for example from a daily cron job):
+
+```bash
+flask --app app:create_app purge-logs            # logs older than LOG_RETENTION_DAYS (default 365)
+flask --app app:create_app purge-logs --days 180 # a different period
+```
 
 ---
 
 ## 🌐 RESTful API v1 Documentation
 
-All API endpoints are protected using the `X-API-KEY` HTTP header.  
-**Default API Key:** `kaya-pts-enterprise-api-key-2026`
+All API endpoints are protected using `X-API-KEY` or `Authorization: Bearer`. Keys are defined only in `.env`; `API_KEYS_JSON` supports additional scoped integration keys.
+
+| Scope | Grants |
+| :--- | :--- |
+| `personnel:read` | List and read personnel records |
+| `personnel:write` | Create, update and archive personnel |
+| `personnel:salary` | Read and write the `maas` (salary) field |
+| `personnel:personal` | Read and write `dogum_tarihi` and `ek_bilgi` |
+| `stats:read` | `/stats` and `/docs` |
+
+A key without a scope does not see those fields in responses and gets `403` when writing them.
 
 ### 1. Retrieve Statistics
 * **GET** `/api/v1/stats`
-* **Headers:** `X-API-KEY: kaya-pts-enterprise-api-key-2026`
+* **Headers:** `X-API-KEY: <API_KEY from .env>`
 * **Response Sample:**
   ```json
   {
@@ -126,12 +167,12 @@ All API endpoints are protected using the `X-API-KEY` HTTP header.
   ```
 
 ### 2. List Personnel
-* **GET** `/api/v1/personeller?page=1&limit=20&search=Ahmet&dept=Yazılım`
-* **Headers:** `X-API-KEY: kaya-pts-enterprise-api-key-2026`
+* **GET** `/api/v1/personeller?page=1&per_page=20&q=Ahmet&departman=Yazılım`
+* **Headers:** `X-API-KEY: <API_KEY from .env>`
 
 ### 3. Create Personnel
 * **POST** `/api/v1/personel`
-* **Headers:** `X-API-KEY: kaya-pts-enterprise-api-key-2026`, `Content-Type: application/json`
+* **Headers:** `X-API-KEY: <API_KEY from .env>`, `Content-Type: application/json`
 * **Body (JSON):**
   ```json
   {
@@ -161,9 +202,9 @@ All API endpoints are protected using the `X-API-KEY` HTTP header.
 To run the complete automated test suite covering authentication, brute-force lockout, password policy, RBAC authorization, CRUD lifecycles, Excel export, and REST API:
 
 ```powershell
-.\venv\Scripts\python -m unittest test_enterprise.py
+.\venv\Scripts\python -m unittest -v
 ```
-> **Result:** `Ran 8 tests in ~3.2s -> OK (100% Passing)`
+> The suite includes RBAC denial, API validation limits, CRUD, leave, Excel, and authentication coverage.
 
 ---
 
@@ -177,6 +218,7 @@ personelsistemi/
 ├── models.py               # Database Models (Kullanici, Personel, Izin, Log, LoginAttempt)
 ├── utils.py                # RBAC decorators, Rate Limiter, File & Password Validators
 ├── test_enterprise.py      # Automated enterprise test suite
+├── test_security.py        # Security, privacy and role tests
 ├── clean_system.py         # System reset and database sanitation utility
 ├── routes/
 │   ├── auth.py             # Login, Logout, Session Rate Limiting
@@ -189,7 +231,10 @@ personelsistemi/
 ├── templates/              # Glassmorphism Jinja2 HTML Templates
 ├── static/
 │   ├── css/style.css       # Enterprise Dark Theme & Bento Grid Layouts
-│   └── js/main.js          # Live Search Filtering, Toast Notifications
+│   ├── js/main.js          # Modals, confirmations, chart and live search (CSP-safe)
+│   └── vendor/             # Self-hosted Lucide, Chart.js and Inter font
+├── uploads/                # Personnel photos (not in git, not public)
+├── migrations/             # Alembic database migrations
 ├── Dockerfile              # Production Docker Image Specification
 ├── docker-compose.yml      # Multi-container Compose for Web + PostgreSQL
 ├── requirements.txt        # Python package dependencies

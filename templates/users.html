@@ -6,7 +6,7 @@
         <h2 class="page-title">{{ _('users_title') }}</h2>
         <p class="section-subtitle">{{ _('users_subtitle') }}</p>
     </div>
-    <button class="btn btn-primary" onclick="openUserModal()">
+    <button type="button" class="btn btn-primary" data-modal-open="userModal">
         <i data-lucide="user-plus"></i> {{ _('users_btn_new') }}
     </button>
 </div>
@@ -19,14 +19,20 @@
                 <th>{{ _('users_th_fullname') }}</th>
                 <th>{{ _('users_th_email') }}</th>
                 <th>{{ _('users_th_role') }}</th>
+                <th>{{ _('users_th_department') }}</th>
                 <th>{{ _('users_th_status') }}</th>
+                <th>{{ _('users_th_last_login') }}</th>
                 <th class="text-right">{{ _('users_th_actions') }}</th>
             </tr>
         </thead>
         <tbody>
             {% for user in users %}
+            {% set is_self = current_user and user.id == current_user.id %}
             <tr>
-                <td><strong>{{ user.kullanici_adi }}</strong></td>
+                <td>
+                    <strong>{{ user.kullanici_adi }}</strong>
+                    {% if is_self %}<span class="self-badge">{{ _('users_you') }}</span>{% endif %}
+                </td>
                 <td>{{ user.ad_soyad or '-' }}</td>
                 <td>{{ user.email or '-' }}</td>
                 <td>
@@ -34,28 +40,43 @@
                         {{ user.rol }}
                     </span>
                 </td>
+                <td>{{ user.departman or '-' }}</td>
                 <td>
                     <span class="status-badge-{{ 'active' if user.aktif_mi else 'inactive' }}">
                         {{ _('personnel_status_active') if user.aktif_mi else _('personnel_status_inactive') }}
                     </span>
                 </td>
-                <td class="text-right">
-                    {% if user.kullanici_adi != 'admin' %}
-                    <form action="{{ url_for('kullanici.edit_role', id=user.id) }}" method="POST" class="inline-form">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <select name="rol" class="select-sm" onchange="this.form.submit()">
-                            {% for r in roles %}
-                            <option value="{{ r }}" {% if user.rol == r %}selected{% endif %}>{{ r }}</option>
-                            {% endfor %}
-                        </select>
-                    </form>
-                    
-                    <form action="{{ url_for('kullanici.delete', id=user.id) }}" method="POST" class="inline-form" onsubmit="return confirm('{{ _('users_delete_confirm') }}');">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="btn btn-danger btn-xs" title="Sil"><i data-lucide="trash-2"></i></button>
-                    </form>
+                <td class="text-muted-xs">{{ user.son_giris_tarihi.strftime('%d.%m.%Y %H:%M') if user.son_giris_tarihi else '-' }}</td>
+                <td class="text-right actions-cell">
+                    <button type="button" class="btn btn-edit btn-xs" title="{{ _('users_btn_edit') }}"
+                            data-modal-open="userEditModal"
+                            data-modal-action="{{ url_for('kullanici.edit', id=user.id) }}"
+                            data-modal-values="{{ {
+                                'kullanici_adi': user.kullanici_adi,
+                                'ad_soyad': user.ad_soyad or '',
+                                'email': user.email or '',
+                                'rol': user.rol,
+                                'departman': user.departman or '',
+                                'aktif_mi': user.aktif_mi,
+                                '_locked': is_self,
+                            } | tojson | forceescape }}">
+                        <i data-lucide="pencil"></i>
+                    </button>
+                    {% if is_self %}
+                    <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline btn-xs" title="{{ _('nav_change_password') }}">
+                        <i data-lucide="key-round"></i>
+                    </a>
                     {% else %}
-                    <span class="text-disabled">{{ _('users_primary_admin') }}</span>
+                    <button type="button" class="btn btn-outline btn-xs" title="{{ _('users_btn_reset_password') }}"
+                            data-modal-open="passwordResetModal"
+                            data-modal-action="{{ url_for('kullanici.reset_password', id=user.id) }}"
+                            data-modal-values="{{ {'kullanici_adi': user.kullanici_adi} | tojson | forceescape }}">
+                        <i data-lucide="key-round"></i>
+                    </button>
+                    <form action="{{ url_for('kullanici.delete', id=user.id) }}" method="POST" class="inline-form" data-confirm="{{ _('users_delete_confirm') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-danger btn-xs" title="{{ _('btn_delete') }}"><i data-lucide="trash-2"></i></button>
+                    </form>
                     {% endif %}
                 </td>
             </tr>
@@ -64,46 +85,116 @@
     </table>
 </div>
 
+<datalist id="userDepartmentOptions">
+    {% for dept in departments %}<option value="{{ dept }}">{% endfor %}
+</datalist>
+
 <div class="modal-overlay" id="userModal">
     <div class="glass modal modal-sm">
         <div class="modal-header">
             <h3 class="modal-title"><i data-lucide="user-plus"></i> {{ _('users_modal_new_title') }}</h3>
-            <button class="close-btn" onclick="closeUserModal()">&times;</button>
+            <button type="button" class="close-btn" data-modal-close aria-label="{{ _('btn_close') }}">&times;</button>
         </div>
         <form method="POST" action="{{ url_for('kullanici.add') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="form-group">
                 <label>{{ _('users_field_username') }} *</label>
-                <input type="text" name="kullanici_adi" class="form-control" required placeholder="ahmetk">
+                <input type="text" name="kullanici_adi" class="form-control" required minlength="3" maxlength="80" pattern="[A-Za-z0-9._\-]+" autocomplete="off" placeholder="ahmetk">
+                <small class="form-help-text">{{ _('users_username_hint') }}</small>
             </div>
             <div class="form-group">
                 <label>{{ _('users_field_fullname') }}</label>
-                <input type="text" name="ad_soyad" class="form-control" placeholder="Ahmet Kaya">
+                <input type="text" name="ad_soyad" class="form-control" maxlength="120" placeholder="Ahmet Kaya">
             </div>
             <div class="form-group">
                 <label>{{ _('users_field_email') }}</label>
-                <input type="email" name="email" class="form-control" placeholder="ahmet@kayapts.com">
+                <input type="email" name="email" class="form-control" maxlength="120" placeholder="ahmet@kayapts.com">
             </div>
             <div class="form-group">
                 <label>{{ _('users_field_password') }} *</label>
-                <input type="password" name="sifre" class="form-control" required placeholder="••••••••">
+                <input type="password" name="sifre" class="form-control" required minlength="12" autocomplete="new-password" placeholder="••••••••••••">
                 <small class="form-help-text">{{ _('users_password_hint') }}</small>
             </div>
-            <div class="form-group">
-                <label>{{ _('users_field_role') }}</label>
-                <select name="rol" class="form-control">
-                    {% for r in roles %}
-                    <option value="{{ r }}">{{ r }}</option>
-                    {% endfor %}
-                </select>
+            <div class="form-row">
+                <div class="form-group form-col">
+                    <label>{{ _('users_field_role') }}</label>
+                    <select name="rol" class="form-control">
+                        {% for r in roles %}
+                        <option value="{{ r }}" {% if r == 'IK' %}selected{% endif %}>{{ r }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group form-col">
+                    <label>{{ _('users_field_department') }}</label>
+                    <input type="text" name="departman" class="form-control" maxlength="100" list="userDepartmentOptions">
+                </div>
             </div>
+            <small class="form-help-text form-help-block">{{ _('users_department_hint') }}</small>
             <button type="submit" class="btn btn-primary btn-full"><i data-lucide="check"></i> {{ _('btn_save') }}</button>
         </form>
     </div>
 </div>
 
-<script>
-    function openUserModal() { document.getElementById('userModal').classList.add('active'); lucide.createIcons(); }
-    function closeUserModal() { document.getElementById('userModal').classList.remove('active'); }
-</script>
+<div class="modal-overlay" id="userEditModal">
+    <div class="glass modal modal-sm">
+        <div class="modal-header">
+            <h3 class="modal-title"><i data-lucide="user-cog"></i> <span>{{ _('users_modal_edit_title') }}: <strong data-bind="kullanici_adi"></strong></span></h3>
+            <button type="button" class="close-btn" data-modal-close aria-label="{{ _('btn_close') }}">&times;</button>
+        </div>
+        <form method="POST" action="">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group">
+                <label>{{ _('users_field_fullname') }}</label>
+                <input type="text" name="ad_soyad" class="form-control" maxlength="120">
+            </div>
+            <div class="form-group">
+                <label>{{ _('users_field_email') }}</label>
+                <input type="email" name="email" class="form-control" maxlength="120">
+            </div>
+            <div class="form-row">
+                <div class="form-group form-col">
+                    <label>{{ _('users_field_role') }}</label>
+                    <select name="rol" class="form-control" data-lockable>
+                        {% for r in roles %}
+                        <option value="{{ r }}">{{ r }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group form-col">
+                    <label>{{ _('users_field_department') }}</label>
+                    <input type="text" name="departman" class="form-control" maxlength="100" list="userDepartmentOptions">
+                </div>
+            </div>
+            <label class="checkbox-row">
+                <input type="checkbox" name="aktif_mi" value="1" data-lockable>
+                <span>{{ _('users_field_active') }}</span>
+            </label>
+            <small class="form-help-text form-help-block">{{ _('users_department_hint') }} {{ _('users_self_lock_hint') }}</small>
+            <button type="submit" class="btn btn-primary btn-full"><i data-lucide="check"></i> {{ _('btn_save') }}</button>
+        </form>
+    </div>
+</div>
+
+<div class="modal-overlay" id="passwordResetModal">
+    <div class="glass modal modal-sm">
+        <div class="modal-header">
+            <h3 class="modal-title"><i data-lucide="key-round"></i> <span>{{ _('users_modal_reset_title') }}: <strong data-bind="kullanici_adi"></strong></span></h3>
+            <button type="button" class="close-btn" data-modal-close aria-label="{{ _('btn_close') }}">&times;</button>
+        </div>
+        <form method="POST" action="">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group">
+                <label>{{ _('account_field_new_password') }}</label>
+                <input type="password" name="sifre" class="form-control" required minlength="12" autocomplete="new-password">
+                <small class="form-help-text">{{ _('users_password_hint') }}</small>
+            </div>
+            <div class="form-group">
+                <label>{{ _('account_field_new_password_repeat') }}</label>
+                <input type="password" name="sifre_tekrar" class="form-control" required minlength="12" autocomplete="new-password">
+            </div>
+            <small class="form-help-text form-help-block">{{ _('users_reset_hint') }}</small>
+            <button type="submit" class="btn btn-primary btn-full"><i data-lucide="check"></i> {{ _('users_btn_reset_password') }}</button>
+        </form>
+    </div>
+</div>
 {% endblock %}

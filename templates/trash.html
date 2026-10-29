@@ -28,7 +28,7 @@
             {% for p in personeller %}
             <tr>
                 <td class="personnel-cell">
-                    <img src="{{ url_for('static', filename='uploads/' + (p.avatar_path or 'default.png')) }}" alt="Avatar" class="table-avatar" onerror="this.src='/static/uploads/default.png'">
+                    <img src="{{ avatar_url(p) }}" alt="Avatar" class="table-avatar" loading="lazy">
                     <div>
                         <div class="personnel-name">{{ p.tam_ad }}</div>
                         <div class="personnel-date">ID: #{{ p.id }}</div>
@@ -45,12 +45,14 @@
                             <i data-lucide="rotate-ccw"></i> {{ _('trash_btn_restore') }}
                         </button>
                     </form>
-                    <form action="{{ url_for('personel.hard_delete', id=p.id) }}" method="POST" class="inline-form" onsubmit="return confirm('{{ _('trash_hard_delete_confirm') }}');">
+                    {% if can_hard_delete %}
+                    <form action="{{ url_for('personel.hard_delete', id=p.id) }}" method="POST" class="inline-form" data-confirm="{{ _('trash_hard_delete_confirm') }}">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-danger" title="{{ _('trash_btn_hard_delete') }}">
                             <i data-lucide="flame"></i> {{ _('trash_btn_hard_delete') }}
                         </button>
                     </form>
+                    {% endif %}
                 </td>
             </tr>
             {% endfor %}

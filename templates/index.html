@@ -7,11 +7,13 @@
         <p class="section-subtitle">{{ _('personnel_subtitle') }}</p>
     </div>
     <div class="header-actions">
+        {% if can_export %}
         <a href="{{ url_for('personel.export_excel') }}" class="btn btn-outline">
             <i data-lucide="file-spreadsheet"></i> {{ _('personnel_export_excel') }}
         </a>
+        {% endif %}
         {% if can_add %}
-        <button class="btn btn-primary" onclick="openAddModal()">
+        <button type="button" class="btn btn-primary" data-modal-open="personnelModal">
             <i data-lucide="user-plus"></i> {{ _('personnel_btn_new') }}
         </button>
         {% endif %}
@@ -24,14 +26,14 @@
         <input type="text" name="q" id="liveSearchInput" class="filter-input" placeholder="{{ _('personnel_search_ph') }}" value="{{ search_query }}">
     </div>
     
-    <select name="departman" class="filter-select" onchange="document.getElementById('filterForm').submit()">
+    <select name="departman" class="filter-select" data-autosubmit>
         <option value="">{{ _('personnel_all_depts') }}</option>
         {% for dept in departments %}
             <option value="{{ dept }}" {% if filter_dept == dept %}selected{% endif %}>{{ dept }}</option>
         {% endfor %}
     </select>
 
-    <select name="pozisyon" class="filter-select" onchange="document.getElementById('filterForm').submit()">
+    <select name="pozisyon" class="filter-select" data-autosubmit>
         <option value="">{{ _('personnel_all_pos') }}</option>
         {% for pos in positions %}
             <option value="{{ pos }}" {% if filter_pos == pos %}selected{% endif %}>{{ pos }}</option>
@@ -65,7 +67,7 @@
             {% for p in personeller %}
             <tr class="personel-row">
                 <td class="personnel-cell">
-                    <img src="{{ url_for('static', filename='uploads/' + (p.avatar_path or 'default.png')) }}" alt="Avatar" class="table-avatar" onerror="this.src='/static/uploads/default.png'">
+                    <img src="{{ avatar_url(p) }}" alt="Avatar" class="table-avatar" loading="lazy">
                     <div>
                         <div class="personnel-name">{{ p.tam_ad }}</div>
                         <div class="personnel-date">{{ _('personnel_entry_date') }}: {{ p.ise_giris_tarihi.strftime('%d.%m.%Y') if p.ise_giris_tarihi else '-' }}</div>
@@ -87,7 +89,7 @@
                         <i data-lucide="eye"></i> {{ _('personnel_btn_view') }}
                     </a>
                     {% if can_delete %}
-                    <form action="{{ url_for('personel.delete', id=p.id) }}" method="POST" class="inline-form" onsubmit="return confirm('{{ _('personnel_delete_confirm') }}');">
+                    <form action="{{ url_for('personel.delete', id=p.id) }}" method="POST" class="inline-form" data-confirm="{{ _('personnel_delete_confirm') }}">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-danger" title="{{ _('personnel_btn_delete') }}">
                             <i data-lucide="trash-2"></i>
@@ -138,28 +140,31 @@
 </div>
 {% endif %}
 
+{% if can_add %}
 <div class="modal-overlay" id="personnelModal">
     <div class="glass modal">
         <div class="modal-header">
             <h3 class="modal-title"><i data-lucide="user-plus"></i> {{ _('modal_add_title') }}</h3>
-            <button class="close-btn" onclick="closeModal()">&times;</button>
+            <button type="button" class="close-btn" data-modal-close aria-label="{{ _('btn_close') }}">&times;</button>
         </div>
         <form method="POST" action="{{ url_for('personel.add') }}" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="form-row">
-                <div class="form-group form-col"><label>{{ _('modal_first_name') }} *</label><input type="text" name="ad" class="form-control" required placeholder="Ahmet"></div>
-                <div class="form-group form-col"><label>{{ _('modal_last_name') }} *</label><input type="text" name="soyad" class="form-control" required placeholder="Yılmaz"></div>
+                <div class="form-group form-col"><label>{{ _('modal_first_name') }} *</label><input type="text" name="ad" class="form-control" required maxlength="100" placeholder="John"></div>
+                <div class="form-group form-col"><label>{{ _('modal_last_name') }} *</label><input type="text" name="soyad" class="form-control" required maxlength="100" placeholder="Doe"></div>
             </div>
             <div class="form-row">
-                <div class="form-group form-col"><label>{{ _('modal_dept') }}</label><input type="text" name="departman" class="form-control" placeholder="Yazılım / IT"></div>
-                <div class="form-group form-col"><label>{{ _('modal_pos') }}</label><input type="text" name="pozisyon" class="form-control" placeholder="Software Engineer"></div>
+                <div class="form-group form-col"><label>{{ _('modal_dept') }}</label><input type="text" name="departman" class="form-control" maxlength="100" list="departmentOptions" placeholder="IT / Engineering"></div>
+                <div class="form-group form-col"><label>{{ _('modal_pos') }}</label><input type="text" name="pozisyon" class="form-control" maxlength="100" placeholder="Software Engineer"></div>
             </div>
             <div class="form-row">
-                <div class="form-group form-col"><label>{{ _('modal_phone') }}</label><input type="text" name="telefon" class="form-control" placeholder="0532 111 2233"></div>
-                <div class="form-group form-col"><label>{{ _('modal_email') }}</label><input type="email" name="email" class="form-control" placeholder="ahmet@kayapts.com"></div>
+                <div class="form-group form-col"><label>{{ _('modal_phone') }}</label><input type="tel" name="telefon" class="form-control" maxlength="30" placeholder="0532 111 2233"></div>
+                <div class="form-group form-col"><label>{{ _('modal_email') }}</label><input type="email" name="email" class="form-control" maxlength="120" placeholder="ahmet@kayapts.com"></div>
             </div>
             <div class="form-row">
-                <div class="form-group form-col"><label>{{ _('modal_salary') }}</label><input type="number" step="0.01" name="maas" class="form-control" placeholder="65000"></div>
+                {% if can_view_salary %}
+                <div class="form-group form-col"><label>{{ _('modal_salary') }}</label><input type="number" step="0.01" min="0" max="9999999999.99" name="maas" class="form-control" placeholder="65000"></div>
+                {% endif %}
                 <div class="form-group form-col"><label>{{ _('modal_start_date') }}</label><input type="date" name="ise_giris_tarihi" class="form-control"></div>
             </div>
             <div class="form-row">
@@ -172,16 +177,10 @@
             </div>
             <button type="submit" class="btn btn-primary btn-full"><i data-lucide="check"></i> {{ _('btn_save_personnel') }}</button>
         </form>
+        <datalist id="departmentOptions">
+            {% for dept in departments %}<option value="{{ dept }}">{% endfor %}
+        </datalist>
     </div>
 </div>
-
-<script>
-    function openAddModal() { 
-        document.getElementById('personnelModal').classList.add('active'); 
-        lucide.createIcons();
-    }
-    function closeModal() { 
-        document.getElementById('personnelModal').classList.remove('active'); 
-    }
-</script>
+{% endif %}
 {% endblock %}

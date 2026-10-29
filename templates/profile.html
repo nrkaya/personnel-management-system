@@ -9,11 +9,11 @@
         <h2 class="page-title page-title-compact">{{ p.tam_ad }}</h2>
     </div>
     <div class="header-actions">
-        <button class="btn btn-outline" onclick="window.print()">
+        <button type="button" class="btn btn-outline" data-print>
             <i data-lucide="printer"></i> {{ _('profile_btn_print') }}
         </button>
         {% if can_edit %}
-        <button class="btn btn-primary" onclick="openEditModal()">
+        <button type="button" class="btn btn-primary" data-modal-open="editModal">
             <i data-lucide="edit"></i> {{ _('personnel_btn_edit') }}
         </button>
         {% endif %}
@@ -22,7 +22,7 @@
 
 <div class="profile-grid">
     <div class="glass profile-card">
-        <img src="{{ url_for('static', filename='uploads/' + (p.avatar_path or 'default.png')) }}" alt="Avatar" class="avatar" onerror="this.src='/static/uploads/default.png'">
+        <img src="{{ avatar_url(p) }}" alt="Avatar" class="avatar">
         <div class="profile-info">
             <h3>{{ p.tam_ad }}</h3>
             <p class="profile-position">{{ p.pozisyon or _('profile_not_specified') }}</p>
@@ -42,10 +42,12 @@
                 <label>{{ _('modal_start_date') }}</label>
                 <div>{{ p.ise_giris_tarihi.strftime('%d.%m.%Y') if p.ise_giris_tarihi else '-' }}</div>
             </div>
+            {% if can_view_personal %}
             <div class="detail-item">
                 <label>{{ _('modal_birth_date') }}</label>
                 <div>{{ p.dogum_tarihi.strftime('%d.%m.%Y') if p.dogum_tarihi else '-' }}</div>
             </div>
+            {% endif %}
             {% if can_view_salary %}
             <div class="detail-item">
                 <label>{{ _('profile_salary_net') }}</label>
@@ -60,7 +62,7 @@
             <div class="card-header-flex">
                 <h3 class="box-heading"><i data-lucide="calendar"></i> {{ _('profile_leave_history') }}</h3>
                 {% if can_manage_leaves %}
-                <button class="btn btn-outline btn-sm" onclick="openLeaveModal()">
+                <button type="button" class="btn btn-outline btn-sm" data-modal-open="leaveModal">
                     <i data-lucide="plus"></i> {{ _('profile_btn_new_leave') }}
                 </button>
                 {% endif %}
@@ -73,8 +75,10 @@
                         <th>{{ _('leaves_th_start') }} - {{ _('leaves_th_end') }}</th>
                         <th>{{ _('leaves_th_type') }}</th>
                         <th>{{ _('leaves_th_status') }}</th>
+                        {% if can_view_leave_reason %}
                         <th>{{ _('leaves_th_reason') }}</th>
-                        {% if can_manage_leaves %}
+                        {% endif %}
+                        {% if can_delete_leaves %}
                         <th class="text-right">{{ _('leaves_th_actions') }}</th>
                         {% endif %}
                     </tr>
@@ -83,18 +87,20 @@
                     {% for izin in izinler %}
                     <tr>
                         <td><strong>{{ izin.baslangic.strftime('%d.%m.%Y') }}</strong> - {{ izin.bitis.strftime('%d.%m.%Y') }}</td>
-                        <td><span class="badge badge-info">{{ izin.tur }}</span></td>
+                        <td><span class="badge badge-info">{{ _(izin.tur) }}</span></td>
                         <td>
                             <span class="status-badge-{{ 'active' if izin.durum == 'Onaylandı' else 'inactive' }}">
-                                {{ izin.durum }}
+                                {{ _(izin.durum) }}
                             </span>
                         </td>
+                        {% if can_view_leave_reason %}
                         <td>{{ izin.aciklama or '-' }}</td>
-                        {% if can_manage_leaves %}
+                        {% endif %}
+                        {% if can_delete_leaves %}
                         <td class="text-right">
-                            <form action="{{ url_for('izin.sil', id=izin.id) }}" method="POST" class="inline-form" onsubmit="return confirm('{{ _('profile_delete_leave_confirm') }}');">
+                            <form action="{{ url_for('izin.sil', id=izin.id) }}" method="POST" class="inline-form" data-confirm="{{ _('profile_delete_leave_confirm') }}">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="btn btn-danger btn-xs" title="Sil"><i data-lucide="trash-2"></i></button>
+                                <button type="submit" class="btn btn-danger btn-xs" title="{{ _('btn_delete') }}"><i data-lucide="trash-2"></i></button>
                             </form>
                         </td>
                         {% endif %}
@@ -107,10 +113,12 @@
             {% endif %}
         </div>
 
+        {% if can_view_personal %}
         <div class="glass detail-box">
             <h3 class="box-heading"><i data-lucide="file-text"></i> {{ _('profile_dossier') }}</h3>
             <p class="notes-text">{{ p.ek_bilgi or _('profile_no_notes') }}</p>
         </div>
+        {% endif %}
     </div>
 </div>
 
@@ -119,25 +127,25 @@
     <div class="glass modal">
         <div class="modal-header">
             <h3 class="modal-title"><i data-lucide="edit-3"></i> {{ _('modal_edit_title') }}</h3>
-            <button class="close-btn" onclick="closeEditModal()">&times;</button>
+            <button type="button" class="close-btn" data-modal-close aria-label="{{ _('btn_close') }}">&times;</button>
         </div>
         <form method="POST" action="{{ url_for('personel.edit', id=p.id) }}" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="form-row">
-                <div class="form-group form-col"><label>{{ _('modal_first_name') }}</label><input type="text" name="ad" class="form-control" value="{{ p.ad }}" required></div>
-                <div class="form-group form-col"><label>{{ _('modal_last_name') }}</label><input type="text" name="soyad" class="form-control" value="{{ p.soyad }}" required></div>
+                <div class="form-group form-col"><label>{{ _('modal_first_name') }}</label><input type="text" name="ad" class="form-control" value="{{ p.ad }}" required maxlength="100"></div>
+                <div class="form-group form-col"><label>{{ _('modal_last_name') }}</label><input type="text" name="soyad" class="form-control" value="{{ p.soyad }}" required maxlength="100"></div>
             </div>
             <div class="form-row">
-                <div class="form-group form-col"><label>{{ _('modal_dept') }}</label><input type="text" name="departman" class="form-control" value="{{ p.departman or '' }}"></div>
-                <div class="form-group form-col"><label>{{ _('modal_pos') }}</label><input type="text" name="pozisyon" class="form-control" value="{{ p.pozisyon or '' }}"></div>
+                <div class="form-group form-col"><label>{{ _('modal_dept') }}</label><input type="text" name="departman" class="form-control" value="{{ p.departman or '' }}" maxlength="100"></div>
+                <div class="form-group form-col"><label>{{ _('modal_pos') }}</label><input type="text" name="pozisyon" class="form-control" value="{{ p.pozisyon or '' }}" maxlength="100"></div>
             </div>
             <div class="form-row">
-                <div class="form-group form-col"><label>{{ _('modal_phone') }}</label><input type="text" name="telefon" class="form-control" value="{{ p.telefon or '' }}"></div>
-                <div class="form-group form-col"><label>{{ _('modal_email') }}</label><input type="email" name="email" class="form-control" value="{{ p.email or '' }}"></div>
+                <div class="form-group form-col"><label>{{ _('modal_phone') }}</label><input type="tel" name="telefon" class="form-control" value="{{ p.telefon or '' }}" maxlength="30"></div>
+                <div class="form-group form-col"><label>{{ _('modal_email') }}</label><input type="email" name="email" class="form-control" value="{{ p.email or '' }}" maxlength="120"></div>
             </div>
             <div class="form-row">
                 {% if can_view_salary %}
-                <div class="form-group form-col"><label>{{ _('modal_salary') }}</label><input type="number" step="0.01" name="maas" class="form-control" value="{{ p.maas }}"></div>
+                <div class="form-group form-col"><label>{{ _('modal_salary') }}</label><input type="number" step="0.01" min="0" max="9999999999.99" name="maas" class="form-control" value="{{ p.maas }}"></div>
                 {% endif %}
                 <div class="form-group form-col"><label>{{ _('modal_start_date') }}</label><input type="date" name="ise_giris_tarihi" class="form-control" value="{{ p.ise_giris_tarihi.strftime('%Y-%m-%d') if p.ise_giris_tarihi else '' }}"></div>
             </div>
@@ -160,7 +168,7 @@
     <div class="glass modal modal-sm">
         <div class="modal-header">
             <h3 class="modal-title"><i data-lucide="calendar-plus"></i> {{ _('leaves_modal_title') }}</h3>
-            <button class="close-btn" onclick="closeLeaveModal()">&times;</button>
+            <button type="button" class="close-btn" data-modal-close aria-label="{{ _('btn_close') }}">&times;</button>
         </div>
         <form method="POST" action="{{ url_for('izin.ekle', personel_id=p.id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -184,18 +192,11 @@
             </div>
             <div class="form-group">
                 <label>{{ _('leaves_modal_reason') }}</label>
-                <textarea name="aciklama" class="form-control" rows="2" placeholder="..."></textarea>
+                <textarea name="aciklama" class="form-control" rows="2" maxlength="1000" placeholder="..."></textarea>
             </div>
             <button type="submit" class="btn btn-primary btn-full"><i data-lucide="check"></i> {{ _('profile_btn_save_leave') }}</button>
         </form>
     </div>
 </div>
 {% endif %}
-
-<script>
-    function openEditModal() { document.getElementById('editModal').classList.add('active'); lucide.createIcons(); }
-    function closeEditModal() { document.getElementById('editModal').classList.remove('active'); }
-    function openLeaveModal() { document.getElementById('leaveModal').classList.add('active'); lucide.createIcons(); }
-    function closeLeaveModal() { document.getElementById('leaveModal').classList.remove('active'); }
-</script>
 {% endblock %}

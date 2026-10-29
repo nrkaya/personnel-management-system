@@ -39,11 +39,13 @@
 - 🏗️ **Modüler Mimari (Flask Blueprints):** 7 bağımsız iş modülü (`auth`, `dashboard`, `personel`, `izin`, `kullanici`, `logs`, `api`).
 - 🔐 **Katmanlı Kurumsal Güvenlik:**
   - **CSRF Koruması:** `Flask-WTF` ile tüm form ve AJAX isteklerinde token doğrulaması.
-  - **Brute-Force & Rate Limiting:** 5 hatalı giriş denemesinde hesap ve IP adresi **10 dakika otomatik kilitlenir**.
-  - **Şifre Güvenlik Politikası:** En az 8 karakter, büyük/küçük harf ve rakam zorunluluğu.
-  - **Güvenli Dosya & Avatar Yükleme:** Yalnızca onaylı MIME-türleri (`image/png`, `image/jpeg`, `image/webp`) ve uzantılar kabul edilir, rastgele UUID ile adlandırılarak sunucu güvenliği sağlanır.
-  - **Güvenli Oturumlar (Session Security):** `HttpOnly`, `SameSite=Lax`, `PermanentSessionLifetime` (8 saat).
-  - **Denetim Logları (Audit Logging):** Kimin, hangi IP ile hangi saatte ne işlem yaptığı veri tabanında değiştirilemez şekilde saklanır.
+  - **Brute-Force & Rate Limiting:** Aynı hesap/IP için art arda 5 hatalı denemede giriş **10 dakika kilitlenir**. Hata mesajı her durumda aynıdır ve bilinmeyen kullanıcı adları da aynı maliyetle doğrulanır; böylece hangi kullanıcı adının var olduğu anlaşılamaz.
+  - **Şifre Güvenlik Politikası:** En az 12 karakter; büyük/küçük harf, rakam ve özel karakter zorunluluğu. Kullanıcılar kendi şifresini değiştirebilir, Admin şifre sıfırlayabilir.
+  - **Güvenli Fotoğraf Yükleme:** Görseller Pillow ile doğrulanıp yeniden kodlanır (EXIF/konum bilgisi silinir), rastgele UUID ile adlandırılır ve herkese açık `static` klasörü yerine `uploads/` altında tutulur; yalnızca giriş yapmış ve o kaydı görmeye yetkili kullanıcılara sunulur.
+  - **Güvenli Oturumlar:** `HttpOnly`, `SameSite=Lax`, 8 saat ömür. Çıkış, şifre değişikliği ve hesap pasifleştirme o kullanıcının **tüm** oturum çerezlerini geçersiz kılar.
+  - **Sıkı İçerik Güvenlik Politikası (CSP):** Satır içi script yoktur; Lucide, Chart.js ve Inter fontu `static/vendor` altından sunulur, ziyaretçi verisi üçüncü taraf CDN'lere gitmez.
+  - **Denetim Logları (Audit Logging):** Kimin, hangi IP ile hangi saatte ne işlem yaptığı saklanır; `flask purge-logs` ile saklama süresi uygulanır.
+  - **Excel Formül Enjeksiyonu Koruması:** `=`, `+`, `-`, `@` ile başlayan değerler dışa aktarımda düz metin olarak yazılır.
 - 👥 **4 Kademeli Rol ve Yetkilendirme (RBAC):** `Admin`, `IK`, `Müdür`, `Muhasebe`.
 - 📊 **Bento Grid Yönetici Paneli:** Chart.js departman dağılım grafikleri, doğum günü kutlamaları ve yaklaşan izin takip widget'ları.
 - ⚡ **Yüksek Performanslı Arayüz:** Sayfa başına 10 personel sayfalama (pagination) ve anlık canlı filtreleme/arama motoru.
@@ -58,14 +60,20 @@
 | Yetki / İşlem | 👑 Admin | 💼 İK (İnsan Kaynakları) | 👔 Müdür | 💰 Muhasebe |
 | :--- | :---: | :---: | :---: | :---: |
 | **Giriş & Dashboard** | ✅ | ✅ | ✅ | ✅ |
-| **Personel Listesini Görme** | ✅ | ✅ | ✅ | ✅ |
+| **Personel Listesini Görme** | ✅ | ✅ | 🔸 kendi departmanı | ✅ |
 | **Personel Ekleme / Düzenleme** | ✅ | ✅ | ❌ | ❌ |
 | **Personel Silme & Çöp Kutusu** | ✅ | ✅ | ❌ | ❌ |
+| **Çöp Kutusundan Kalıcı Silme** | ✅ | ❌ | ❌ | ❌ |
 | **Maaş Bilgilerini Görme** | ✅ | ✅ | ❌ | ✅ |
-| **İzin Onaylama / Reddetme** | ✅ | ✅ | ✅ | ❌ |
-| **Excel Raporu İndirme** | ✅ | ✅ | ✅ | ✅ |
+| **Doğum Tarihi & Özlük Notları** | ✅ | ✅ | ❌ | ❌ |
+| **İzin Talebi / Onaylama / Reddetme** | ✅ | ✅ | 🔸 kendi departmanı | ❌ |
+| **İzin Açıklamasını Görme** | ✅ | ✅ | 🔸 kendi departmanı | ❌ |
+| **İzin Kaydı Silme** | ✅ | ✅ | ❌ | ❌ |
+| **Excel Raporu İndirme** | ✅ | ✅ | 🔸 kendi departmanı | ✅ |
 | **Kullanıcı & Rol Yönetimi** | ✅ | ❌ | ❌ | ❌ |
 | **Sistem Denetim Logları** | ✅ | ❌ | ❌ | ❌ |
+
+> Müdür hesapları bir departmana bağlıdır (Kullanıcı Yönetimi'nden atanır). Departmanı atanmamış bir müdür hiçbir personel kaydını göremez. Yetkiler `utils.py` içindeki tek bir matristen (`ROLE_HIERARCHY`) okunur; butonlar yalnızca ilgili işlem izinliyse görünür.
 
 ---
 
@@ -74,19 +82,21 @@
 ### Yöntem 1: Yerel Olarak Çalıştırma (Geliştirme Modu - SQLite)
 
 1. **Gereksinimler:** Python 3.10+
-2. **Sanal Ortamı Başlatın ve Çalıştırın:**
+2. **Sanal ortamı ve sırları hazırlayın:**
    ```powershell
-   # Proje klasörüne geçin
    cd C:\Users\Muhammed\Desktop\personelsistemi
-
-   # Uygulamayı başlatın
+   Copy-Item .env.example .env
+   # .env içindeki SECRET_KEY ve API_KEY yer tutucularını benzersiz değerlerle değiştirin.
+   .\venv\Scripts\python -m pip install -r requirements.txt
+   .\venv\Scripts\flask --app app:create_app db upgrade
+   .\venv\Scripts\flask --app app:create_app create-admin
    .\venv\Scripts\python app.py
    ```
 3. **Tarayıcıdan Açın:**
    👉 **`http://127.0.0.1:5000`**
-4. **Varsayılan Yönetici Girişi:**
-   - **Kullanıcı Adı:** `admin`
-   - **Şifre:** `Admin123!`
+4. Yönetici hesabı yalnızca `create-admin` komutunda girdiğiniz bilgilerle oluşturulur; kodda varsayılan hesap veya parola bulunmaz.
+
+> **Güncelleme notu:** Bu sürüm yeni bir veritabanı migration'ı içerir. Güncellemeden sonra `flask --app app:create_app db upgrade` çalıştırın. Oturum çerezleri sürümlendiği için tüm kullanıcıların bir kez yeniden giriş yapması gerekir. Eski sürümde `static/uploads/` altına yüklenmiş fotoğraflar ilk açıldıklarında otomatik olarak `uploads/` klasörüne taşınır.
 
 ---
 
@@ -95,18 +105,49 @@
 ```bash
 docker-compose up --build -d
 ```
-> Web uygulaması ve PostgreSQL veritabanı otomatik olarak ayağa kalkar (`http://localhost:5000`).
+> Önce `.env.example` dosyasını `.env` olarak kopyalayıp tüm yer tutucu sırları ve PostgreSQL değişkenlerini doldurun. PostgreSQL hosta açılmaz; uygulama yalnızca `127.0.0.1:5000` üzerinde dinler ve TLS için reverse proxy bekler. İmaj açılışta migration'ları kendisi uygular (`flask db upgrade`). Reverse proxy arkasında `.env` içinde `TRUSTED_PROXY_COUNT=1` ayarlayın.
+
+### Yöntem 3: Render (veya benzeri PaaS) üzerinde çalıştırma
+
+Dockerfile, Render'ın verdiği `$PORT` değişkenini okur, `FLASK_ENV=production` ile açılır ve her deploy'da migration'ları uygular. Ortam değişkenleri:
+
+| Değişken | Değer |
+| :--- | :--- |
+| `SECRET_KEY`, `API_KEY` | En az 32 karakterlik, birbirinden farklı rastgele değerler (`python -c "import secrets; print(secrets.token_urlsafe(48))"`). Repoda geçmişte görünen eski anahtarlar uygulama tarafından reddedilir. |
+| `DATABASE_URL` | Render PostgreSQL bağlantı adresi. **SQLite kullanmayın**: Render'ın disk alanı her deploy'da sıfırlanır ve veriler silinir. |
+| `TRUSTED_PROXY_COUNT` | `1` — aksi halde tüm ziyaretçiler proxy'nin IP'sini paylaşır; bir kişinin hatalı girişleri herkesi kilitler. |
+| `RATELIMIT_STORAGE_URI` | Mümkünse Render Key Value (Redis) adresi; `memory://` worker'lar arasında paylaşılmaz. |
+
+Personel fotoğraflarının kalıcı olması için `/app/uploads` yoluna bir Render Persistent Disk bağlayın. İlk yöneticiyi Render Shell'den `flask --app app:create_app create-admin` ile oluşturun.
+
+### Bakım: Log saklama süresi (KVKK)
+
+Denetim logları kişi adları ve IP adresleri içerir. Saklama süresini uygulamak için düzenli olarak (ör. günlük cron) çalıştırın:
+
+```bash
+flask --app app:create_app purge-logs            # LOG_RETENTION_DAYS (varsayılan 365) günden eski loglar
+flask --app app:create_app purge-logs --days 180 # farklı bir süre
+```
 
 ---
 
 ## 🌐 RESTful API v1 Dokümantasyonu
 
-Tüm API uç noktaları `X-API-KEY` başlığı ile korunmaktadır.  
-**Varsayılan API Key:** `kaya-pts-enterprise-api-key-2026`
+Tüm API uç noktaları `X-API-KEY` veya `Authorization: Bearer` ile korunur. Anahtarlar yalnızca `.env` üzerinden tanımlanır; `API_KEYS_JSON` ile dar kapsamlı ek anahtarlar eklenebilir.
+
+| Kapsam (scope) | İzin verdiği |
+| :--- | :--- |
+| `personnel:read` | Personel listeleme ve tekil kayıt okuma |
+| `personnel:write` | Personel ekleme, güncelleme, arşive taşıma |
+| `personnel:salary` | `maas` alanını okuma ve yazma |
+| `personnel:personal` | `dogum_tarihi` ve `ek_bilgi` alanlarını okuma ve yazma |
+| `stats:read` | `/stats` ve `/docs` |
+
+Kapsamı olmayan bir anahtar bu alanları yanıtta görmez; yazmaya çalışırsa `403` alır.
 
 ### 1. İstatistikleri Getir
 * **GET** `/api/v1/stats`
-* **Başlıklar:** `X-API-KEY: kaya-pts-enterprise-api-key-2026`
+* **Başlıklar:** `X-API-KEY: <.env içindeki API_KEY>`
 * **Örnek Yanıt:**
   ```json
   {
@@ -120,8 +161,8 @@ Tüm API uç noktaları `X-API-KEY` başlığı ile korunmaktadır.
   ```
 
 ### 2. Personelleri Listele
-* **GET** `/api/v1/personeller?sayfa=1&limit=20&ara=Ahmet&departman=Yazılım`
-* **Başlıklar:** `X-API-KEY: kaya-pts-enterprise-api-key-2026`
+* **GET** `/api/v1/personeller?page=1&per_page=20&q=Ahmet&departman=Yazılım`
+* **Başlıklar:** `X-API-KEY: <.env içindeki API_KEY>`
 
 ### 3. Yeni Personel Ekle
 * **POST** `/api/v1/personel`
@@ -152,9 +193,9 @@ Tüm API uç noktaları `X-API-KEY` başlığı ile korunmaktadır.
 Proje bünyesindeki tüm kimlik doğrulama, brute-force kilitlenmesi, şifre politikası, RBAC yetkileri, CRUD, Excel çıktısı ve API testlerini çalıştırmak için:
 
 ```powershell
-.\venv\Scripts\python -m unittest test_enterprise.py
+.\venv\Scripts\python -m unittest -v
 ```
-> **Test Sonucu:** `Ran 8 tests -> OK (%100 Başarı)`
+> Testler yetkisiz uç nokta erişimi, API doğrulama sınırları, RBAC, CRUD, izin ve Excel çıktısını kapsar.
 
 ---
 
@@ -168,6 +209,7 @@ personelsistemi/
 ├── models.py               # ORM Tabloları (Kullanici, Personel, Izin, Log, LoginAttempt)
 ├── utils.py                # RBAC decorator, Rate Limit, Dosya/Şifre doğrulama
 ├── test_enterprise.py      # Otomatik test paketi
+├── test_security.py        # Güvenlik, gizlilik ve rol testleri
 ├── clean_system.py         # Sistem sıfırlama ve temizlik scripti
 ├── routes/
 │   ├── auth.py             # Giriş, Çıkış, Rate Limit
@@ -180,7 +222,10 @@ personelsistemi/
 ├── templates/              # Cam efektli (Glassmorphism) Jinja2 şablonları
 ├── static/
 │   ├── css/style.css       # Kurumsal koyu tema, Bento Grid CSS
-│   └── js/main.js          # Canlı arama, Toast bildirimleri
+│   ├── js/main.js          # Modal, onay, grafik ve canlı arama (CSP uyumlu)
+│   └── vendor/             # Lucide, Chart.js ve Inter fontu (yerel kopya)
+├── uploads/                # Personel fotoğrafları (git'e girmez, herkese açık değil)
+├── migrations/             # Alembic veritabanı migration'ları
 ├── Dockerfile              # Production Docker image
 ├── docker-compose.yml      # PostgreSQL + Web container
 ├── requirements.txt        # Python kütüphane bağımlılıkları

@@ -55,6 +55,14 @@ class EnterpriseSystemTestCase(unittest.TestCase):
         db.drop_all()
         self.app_context.pop()
 
+    def _login_as(self, user):
+        """Put a valid, versioned session for ``user`` on the test client."""
+        with self.client.session_transaction() as sess:
+            sess['kullanici_adi'] = user.kullanici_adi
+            sess['rol'] = user.rol
+            sess['user_id'] = user.id
+            sess['oturum_surumu'] = user.oturum_surumu
+
     def test_password_policy(self):
         """Test password policy enforcement."""
         valid, _ = validate_password("KayaSecure2026!")
@@ -118,6 +126,18 @@ class EnterpriseSystemTestCase(unittest.TestCase):
         resp_locked = self.client.post('/login', data={'kullanici_adi': 'ik_uzmani', 'sifre': 'Ik123456!'}, follow_redirects=True)
         self.assertIn("kilitlendi", resp_locked.data.decode('utf-8', errors='ignore'))
 
+    def test_logout_requires_post(self):
+        """Logout endpoint must reject GET requests."""
+        self._login_as(self.admin)
+
+        # GET should return 405 Method Not Allowed
+        resp_get = self.client.get('/logout')
+        self.assertEqual(resp_get.status_code, 405)
+
+        # POST should succeed (redirect to login)
+        resp_post = self.client.post('/logout', follow_redirects=True)
+        self.assertEqual(resp_post.status_code, 200)
+
     def test_personnel_lifecycle_and_trash(self):
         """Test personnel CRUD, soft-delete, restore, and permanent deletion."""
         p = Personel(
@@ -154,7 +174,7 @@ class EnterpriseSystemTestCase(unittest.TestCase):
         # Hard Delete
         db.session.delete(trash_item)
         db.session.commit()
-        self.assertIsNone(Personel.query.get(p_id))
+        self.assertIsNone(db.session.get(Personel, p_id))
 
     def test_leave_management(self):
         """Test leave creation, approval lifecycle, and personnel relation."""
@@ -178,12 +198,12 @@ class EnterpriseSystemTestCase(unittest.TestCase):
 
         p.izinler[0].durum = "Onaylandı"
         db.session.commit()
-        self.assertEqual(Izin.query.get(izin.id).durum, "Onaylandı")
+        self.assertEqual(db.session.get(Izin, izin.id).durum, "Onaylandı")
 
     def test_rest_api(self):
         """Test RESTful API v1 endpoints and authentication."""
         headers_invalid = {'X-API-KEY': 'wrong-key'}
-        headers_valid = {'X-API-KEY': 'kaya-pts-enterprise-api-key-2026'}
+        headers_valid = {'X-API-KEY': self.app.config['API_KEY']}
 
         resp_unauth = self.client.get('/api/v1/personeller', headers=headers_invalid)
         self.assertEqual(resp_unauth.status_code, 401)
@@ -214,11 +234,48 @@ class EnterpriseSystemTestCase(unittest.TestCase):
         resp_del = self.client.delete(f'/api/v1/personel/{new_id}', headers=headers_valid)
         self.assertEqual(resp_del.status_code, 200)
 
+        self.assertTrue(Log.query.filter(Log.islem_tipi == 'API Personel Silindi').first())
+
+    def test_endpoint_rbac_and_revoked_account(self):
+        """A lower-privilege account cannot reach privileged endpoints by URL."""
+        self._login_as(self.muhasebe_user)
+
+        self.assertEqual(self.client.get('/users').status_code, 403)
+        self.assertEqual(self.client.get('/trash').status_code, 403)
+        self.assertEqual(self.client.post('/users/add', data={
+            'kullanici_adi': 'escalation_attempt',
+            'sifre': 'VeryStrongPass1!',
+            'rol': 'Admin',
+        }).status_code, 403)
+
+        self.muhasebe_user.aktif_mi = False
+        db.session.commit()
+        self.assertEqual(self.client.get('/personeller').status_code, 302)
+
+    def test_api_validation_and_pagination_limits(self):
+        headers = {'X-API-KEY': self.app.config['API_KEY']}
+        invalid_salary = self.client.post('/api/v1/personel', json={
+            'ad': 'Ali', 'soyad': 'Veli', 'maas': 'not-a-number'
+        }, headers=headers)
+        self.assertEqual(invalid_salary.status_code, 422)
+
+        null_name = self.client.post('/api/v1/personel', json={
+            'ad': None, 'soyad': 'Veli'
+        }, headers=headers)
+        self.assertEqual(null_name.status_code, 422)
+
+        self.assertEqual(
+            self.client.get('/api/v1/personeller?page=-1', headers=headers).status_code,
+            400,
+        )
+        self.assertEqual(
+            self.client.get('/api/v1/personeller?per_page=1000000', headers=headers).status_code,
+            400,
+        )
+
     def test_excel_export(self):
         """Test Excel (.xlsx) export functionality."""
-        with self.client.session_transaction() as sess:
-            sess['kullanici_adi'] = 'admin'
-            sess['rol'] = 'Admin'
+        self._login_as(self.admin)
 
         p = Personel(ad="Ahmet", soyad="Yıldız", departman="Finans", aktif_mi=True)
         db.session.add(p)

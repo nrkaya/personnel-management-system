@@ -1,23 +1,25 @@
-from datetime import datetime, date, timedelta
-from flask import Blueprint, render_template, session, redirect, url_for
-from sqlalchemy import func
+from datetime import date, timedelta
+from flask import Blueprint, render_template
+from sqlalchemy import extract, func
 from database import db
 from models import Personel, Kullanici, Izin, Log
+from utils import get_active_session_user, has_permission, permission_required, scope_personnel
 
 dashboard_bp = Blueprint('dashboard', __name__)
 
 @dashboard_bp.route('/')
 @dashboard_bp.route('/dashboard')
+@permission_required('view')
 def index():
-    if 'kullanici_adi' not in session:
-        return redirect(url_for('auth.login'))
-        
+    user = get_active_session_user()
     today = date.today()
     next_14_days = today + timedelta(days=14)
-    
+
+    # Head counts and the department chart are aggregates; the lists below name
+    # people and therefore follow the user's department scope.
     total_personnel = Personel.query.filter_by(aktif_mi=True).count()
     total_users = Kullanici.query.filter_by(aktif_mi=True).count()
-    
+
     # Active leaves count
     active_leaves_count = Izin.query.join(Personel).filter(
         Personel.aktif_mi == True,
@@ -26,23 +28,21 @@ def index():
         Izin.bitis >= today
     ).count()
 
-    # Upcoming leaves in 14 days
-    upcoming_leaves = Izin.query.join(Personel).filter(
+    # Upcoming leaves in 14 days (includes pending and approved)
+    upcoming_leaves = scope_personnel(Izin.query.join(Personel).filter(
         Personel.aktif_mi == True,
-        Izin.durum == 'Onaylandı',
-        Izin.baslangic > today,
+        Izin.durum.in_(['Onaylandı', 'Beklemede']),
+        Izin.baslangic >= today,
         Izin.baslangic <= next_14_days
-    ).order_by(Izin.baslangic.asc()).limit(5).all()
+    ), user).order_by(Izin.baslangic.asc()).limit(5).all()
 
-    # Birthdays today (DB-agnostic filter)
-    all_with_birthday = Personel.query.filter(
+    # Keep this filter in the database rather than loading every employee.
+    birthdays_today = scope_personnel(Personel.query.filter(
         Personel.aktif_mi == True,
-        Personel.dogum_tarihi.isnot(None)
-    ).all()
-    birthdays_today = [
-        p for p in all_with_birthday 
-        if p.dogum_tarihi and p.dogum_tarihi.month == today.month and p.dogum_tarihi.day == today.day
-    ]
+        Personel.dogum_tarihi.isnot(None),
+        extract('month', Personel.dogum_tarihi) == today.month,
+        extract('day', Personel.dogum_tarihi) == today.day,
+    ), user).all()
 
     # Department distribution for Chart.js
     dept_stats = db.session.query(
@@ -54,7 +54,10 @@ def index():
         Personel.departman != ''
     ).group_by(Personel.departman).all()
 
-    recent_logs = Log.query.order_by(Log.tarih_saat.desc()).limit(6).all()
+    # The audit trail is restricted to roles that may read the log page.
+    recent_logs = []
+    if has_permission(user.rol, 'logs'):
+        recent_logs = Log.query.order_by(Log.tarih_saat.desc()).limit(6).all()
 
     return render_template(
         'dashboard.html',
