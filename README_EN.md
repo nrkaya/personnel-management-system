@@ -7,6 +7,7 @@
 [![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0+-D71F00?style=flat&logo=sqlalchemy&logoColor=white)](https://www.sqlalchemy.org/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Ready-4169E1?style=flat&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Tests](https://github.com/nrkaya/personnel-management-system/actions/workflows/tests.yml/badge.svg)](https://github.com/nrkaya/personnel-management-system/actions/workflows/tests.yml)
 
 **KAYA PTS (Kaya Personnel Tracking System)** is a modern enterprise web application designed for comprehensive human resources, employee lifecycle management, leave workflows, department analytics, and payroll management. It pairs top-tier enterprise security and a clean modular architecture with a dark Glassmorphism UI experience.
 
@@ -54,6 +55,9 @@
   - **Spreadsheet Formula Injection Protection:** Values starting with `=`, `+`, `-` or `@` are exported as plain text.
 - 👥 **4-Tier Role-Based Access Control (RBAC):** `Admin`, `IK` (HR), `Mudur` (Manager), `Muhasebe` (Accounting).
 - 📊 **Bento Grid Dashboard:** Chart.js department distribution charts, birthday reminders, and upcoming leave tracking widgets.
+- 📱 **Mobile Friendly:** On phones the sidebar turns into a drawer opened from the menu button in the top bar.
+- 💾 **Backups:** `backup_db.py` backs up SQLite or PostgreSQL together with personnel photos; the Docker Compose setup includes a daily automatic backup service.
+- ✅ **Continuous Integration:** GitHub Actions runs the tests on every push and pull request and checks that migrations match the models on SQLite and PostgreSQL.
 - ⚡ **High-Performance UI:** Paginated tables (10 records/page) and instantaneous client-side search and filtering.
 - 📑 **Corporate Excel Reporting:** Styled and formatted `.xlsx` export engine powered by `openpyxl`.
 - 🌐 **RESTful API v1:** Headless JSON API service secured with `X-API-KEY` authentication for third-party integrations.
@@ -94,8 +98,8 @@
    Copy-Item .env.example .env
    # Replace the SECRET_KEY and API_KEY placeholders in .env with unique values.
    .\venv\Scripts\python -m pip install -r requirements.txt
-   .\venv\Scripts\flask --app app:create_app db upgrade
-   .\venv\Scripts\flask --app app:create_app create-admin
+   .\venv\Scripts\python -m flask --app app:create_app db upgrade
+   .\venv\Scripts\python -m flask --app app:create_app create-admin
    .\venv\Scripts\python app.py
    ```
 3. **Open in Browser:**
@@ -134,6 +138,41 @@ Audit logs contain names and IP addresses. Apply the retention period regularly 
 flask --app app:create_app purge-logs            # logs older than LOG_RETENTION_DAYS (default 365)
 flask --app app:create_app purge-logs --days 180 # a different period
 ```
+
+### Backups
+
+Each backup contains a copy of the database and an archive of personnel photos (`uploads/`). Photos are personal data and a database backup alone would not bring them back.
+
+**Local (SQLite or PostgreSQL):**
+
+```powershell
+.\venv\Scripts\python.exe backup_db.py --keep 14   # back up into backups/, keep the 14 newest
+.\venv\Scripts\python.exe backup_db.py --list      # list existing backups
+```
+
+SQLite backups are safe while the app is running. For PostgreSQL, `pg_dump` must be installed, at the server's major version or newer. Schedule the command daily with Windows Task Scheduler (or cron on Linux); `BACKUP_DIR` writes the backups to another disk.
+
+**Docker Compose:** the `backup` service takes a daily database dump and photo archive and deletes those older than `BACKUP_KEEP_DAYS` (default 14). Copy them to the host with:
+
+```bash
+docker compose cp backup:/backups ./backups
+```
+
+**Render:** Render's free PostgreSQL plan has no backups and expires after a while; use a paid plan (automatic daily backups) for real data. You can also back up from your own computer with Render's *External Database URL*:
+
+```powershell
+$env:DATABASE_URL = "<Render External Database URL>"; .\venv\Scripts\python.exe backup_db.py --no-uploads
+```
+
+**Restore:**
+
+| What | How |
+| :--- | :--- |
+| SQLite | Stop the app, copy `kaya_pts_<time>.db` over `database.db`. |
+| PostgreSQL | `pg_restore --clean --if-exists --no-owner -d "<database URL>" kaya_pts_<time>.dump` |
+| Photos | Extract `kaya_pts_<time>_uploads.zip` (`.tar.gz` under Docker) into `uploads/`. |
+
+> Copy backups to another place regularly (external disk, cloud storage); a backup on the same server is lost with the server.
 
 ---
 
@@ -204,7 +243,7 @@ To run the complete automated test suite covering authentication, brute-force lo
 ```powershell
 .\venv\Scripts\python -m unittest -v
 ```
-> The suite includes RBAC denial, API validation limits, CRUD, leave, Excel, and authentication coverage.
+> The suite includes RBAC denial, API validation limits, CRUD, leave, Excel, authentication and backup coverage. GitHub Actions runs it on every push and pull request (`.github/workflows/tests.yml`).
 
 ---
 
@@ -219,6 +258,8 @@ personelsistemi/
 ├── utils.py                # RBAC decorators, Rate Limiter, File & Password Validators
 ├── test_enterprise.py      # Automated enterprise test suite
 ├── test_security.py        # Security, privacy and role tests
+├── test_backup.py          # Backup tests
+├── backup_db.py            # Database + photo backups
 ├── clean_system.py         # System reset and database sanitation utility
 ├── routes/
 │   ├── auth.py             # Login, Logout, Session Rate Limiting

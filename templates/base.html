@@ -18,8 +18,21 @@
 
     {% if current_user %}
     <div class="app-container">
+        <!-- Below 768px the sidebar becomes a drawer opened from this bar. -->
+        <header class="mobile-topbar">
+            <button type="button" class="menu-toggle" data-sidebar-toggle aria-controls="sidebar" aria-expanded="false" aria-label="{{ _('nav_open_menu') }}">
+                <i data-lucide="menu"></i>
+            </button>
+            <div class="mobile-brand">
+                <i data-lucide="shield-check" class="brand-icon"></i>
+                <span>{{ _('app_brand') }}</span>
+            </div>
+        </header>
+        <div class="sidebar-backdrop" data-sidebar-close></div>
+
         <!-- Sidebar -->
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
+            <button type="button" class="sidebar-close" data-sidebar-close aria-label="{{ _('nav_close_menu') }}">&times;</button>
             <div class="sidebar-brand">
                 <div class="sidebar-logo">
                     <i data-lucide="shield-check" class="brand-icon"></i>
