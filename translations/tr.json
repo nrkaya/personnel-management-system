@@ -323,5 +323,7 @@
   "msg_leave_created": "{name} için {type} talebi onaya gönderildi.",
   "msg_leave_invalid_status": "Geçersiz izin durumu.",
   "msg_leave_status_updated": "İzin durumu {status} olarak güncellendi.",
-  "msg_leave_deleted": "İzin kaydı silindi."
+  "msg_leave_deleted": "İzin kaydı silindi.",
+  "nav_open_menu": "Menüyü aç",
+  "nav_close_menu": "Menüyü kapat"
 }

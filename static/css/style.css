@@ -80,9 +80,24 @@ body.login-body {
     flex-direction: column;
     position: fixed;
     height: 100vh;
+    overflow-y: auto;
     z-index: 100;
 }
 .sidebar-brand { margin-bottom: 2.2rem; }
+
+/* Mobile navigation: a top bar with a menu button that slides the sidebar in. */
+.mobile-topbar, .sidebar-backdrop, .sidebar-close { display: none; }
+.menu-toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px; border-radius: 10px;
+    background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border);
+    color: var(--text-main); cursor: pointer;
+}
+.mobile-brand {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 1.2rem; font-weight: 800; letter-spacing: -0.03em;
+}
+.mobile-brand .brand-icon { width: 22px; height: 22px; }
 .sidebar-logo {
     display: flex;
     align-items: center;
@@ -627,7 +642,7 @@ select:disabled, input:disabled { opacity: 0.55; cursor: not-allowed; }
 
 /* Print Stylesheet (PDF / Card Export) */
 @media print {
-    .sidebar, .page-header .header-actions, .filter-bar, .pagination, .flash-messages, .btn-edit, .btn-danger, .btn-restore, .close-btn, .modal-overlay {
+    .sidebar, .mobile-topbar, .sidebar-backdrop, .page-header .header-actions, .filter-bar, .pagination, .flash-messages, .btn-edit, .btn-danger, .btn-restore, .close-btn, .modal-overlay {
         display: none !important;
     }
     body { background: #ffffff !important; color: #000000 !important; }
@@ -653,7 +668,33 @@ select:disabled, input:disabled { opacity: 0.55; cursor: not-allowed; }
 
 @media (max-width: 768px) {
     :root { --sidebar-width: 0px; }
-    .sidebar { display: none; }
+    .mobile-topbar {
+        display: flex; align-items: center; gap: 12px;
+        position: sticky; top: 0; z-index: 900;
+        padding: 0.8rem 1rem;
+        background: var(--sidebar-bg);
+        border-bottom: 1px solid var(--glass-border);
+    }
+    .sidebar {
+        width: min(280px, 85vw);
+        transform: translateX(-100%);
+        visibility: hidden;
+        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.3s;
+        z-index: 1200;
+    }
+    body.sidebar-open .sidebar { transform: none; visibility: visible; box-shadow: var(--glass-shadow); }
+    .sidebar-backdrop {
+        display: block; position: fixed; inset: 0; z-index: 1150;
+        background: rgba(0, 0, 0, 0.6);
+        opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s;
+    }
+    body.sidebar-open .sidebar-backdrop { opacity: 1; visibility: visible; }
+    body.sidebar-open { overflow: hidden; }
+    .sidebar-close {
+        display: block; position: absolute; top: 0.8rem; right: 0.9rem;
+        background: none; border: none; color: var(--text-muted);
+        font-size: 1.8rem; line-height: 1; cursor: pointer;
+    }
     .main-content { margin-left: 0; padding: 1.5rem 1rem; max-width: 100%; }
     .page-header { flex-direction: column; align-items: flex-start; }
     .filter-bar { flex-direction: column; align-items: stretch; }

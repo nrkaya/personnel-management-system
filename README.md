@@ -2,6 +2,8 @@
 
 [🇹🇷 Türkçe](README.md) | [🇬🇧 English](README_EN.md)
 
+[![Tests](https://github.com/nrkaya/personnel-management-system/actions/workflows/tests.yml/badge.svg)](https://github.com/nrkaya/personnel-management-system/actions/workflows/tests.yml)
+
 **KAYA PTS (Kaya Personel Takip Sistemi)**; kurumsal şirketlerin insan kaynakları, izin süreçleri, departman analitiği ve bordro/maaş yönetimini en üst düzey güvenlik, modern cam efektli (Glassmorphism) kullanıcı deneyimi ve modüler mimari ile buluşturan yeni nesil kurumsal bir web platformudur.
 
 ---
@@ -48,6 +50,9 @@
   - **Excel Formül Enjeksiyonu Koruması:** `=`, `+`, `-`, `@` ile başlayan değerler dışa aktarımda düz metin olarak yazılır.
 - 👥 **4 Kademeli Rol ve Yetkilendirme (RBAC):** `Admin`, `IK`, `Müdür`, `Muhasebe`.
 - 📊 **Bento Grid Yönetici Paneli:** Chart.js departman dağılım grafikleri, doğum günü kutlamaları ve yaklaşan izin takip widget'ları.
+- 📱 **Mobil Uyumlu:** Telefonda yan menü, üst çubuktaki menü butonuyla açılan bir çekmeceye dönüşür.
+- 💾 **Yedekleme:** `backup_db.py` SQLite ve PostgreSQL veritabanını personel fotoğraflarıyla birlikte yedekler; Docker Compose kurulumunda günlük otomatik yedek servisi vardır.
+- ✅ **Sürekli Entegrasyon:** Her push ve pull request'te GitHub Actions testleri çalıştırır ve migration'ların modellerle uyumunu SQLite ve PostgreSQL üzerinde doğrular.
 - ⚡ **Yüksek Performanslı Arayüz:** Sayfa başına 10 personel sayfalama (pagination) ve anlık canlı filtreleme/arama motoru.
 - 📑 **Kurumsal Excel Raporlama:** `openpyxl` ile biçimlendirilmiş, renkli başlıklı `.xlsx` dışa aktarımı.
 - 🌐 **RESTful API v1:** Harici sistem entegrasyonları için `X-API-KEY` korumalı JSON API servisi.
@@ -88,8 +93,8 @@
    Copy-Item .env.example .env
    # .env içindeki SECRET_KEY ve API_KEY yer tutucularını benzersiz değerlerle değiştirin.
    .\venv\Scripts\python -m pip install -r requirements.txt
-   .\venv\Scripts\flask --app app:create_app db upgrade
-   .\venv\Scripts\flask --app app:create_app create-admin
+   .\venv\Scripts\python -m flask --app app:create_app db upgrade
+   .\venv\Scripts\python -m flask --app app:create_app create-admin
    .\venv\Scripts\python app.py
    ```
 3. **Tarayıcıdan Açın:**
@@ -128,6 +133,41 @@ Denetim logları kişi adları ve IP adresleri içerir. Saklama süresini uygula
 flask --app app:create_app purge-logs            # LOG_RETENTION_DAYS (varsayılan 365) günden eski loglar
 flask --app app:create_app purge-logs --days 180 # farklı bir süre
 ```
+
+### Yedekleme
+
+Her yedek, veritabanının bir kopyasını ve personel fotoğraflarının (`uploads/`) arşivini içerir. Fotoğraflar kişisel veridir ve yalnızca veritabanı yedeğiyle geri gelmez.
+
+**Yerel (SQLite veya PostgreSQL):**
+
+```powershell
+.\venv\Scripts\python.exe backup_db.py --keep 14   # backups/ klasörüne yedek al, en yeni 14 yedeği tut
+.\venv\Scripts\python.exe backup_db.py --list      # mevcut yedekleri listele
+```
+
+SQLite yedeği uygulama çalışırken de güvenle alınır. PostgreSQL için bilgisayarda `pg_dump` kurulu olmalı ve sürümü sunucununkiyle aynı veya daha yeni olmalıdır. Günlük yedek için komutu Windows Görev Zamanlayıcı'ya (veya Linux'ta cron'a) ekleyin; `BACKUP_DIR` ortam değişkeniyle yedekleri başka bir diske yazdırabilirsiniz.
+
+**Docker Compose:** `backup` servisi her gün veritabanının dökümünü ve fotoğraf arşivini alır, `BACKUP_KEEP_DAYS` (varsayılan 14) günden eskileri siler. Yedekleri bilgisayara kopyalamak için:
+
+```bash
+docker compose cp backup:/backups ./backups
+```
+
+**Render:** Render'ın ücretsiz PostgreSQL planı yedek almaz ve belirli bir süre sonra silinir; gerçek veri için ücretli plan (otomatik günlük yedek) kullanın. Ek olarak kendi bilgisayarınızdan Render'ın *External Database URL* adresiyle yedek alabilirsiniz:
+
+```powershell
+$env:DATABASE_URL = "<Render External Database URL>"; .\venv\Scripts\python.exe backup_db.py --no-uploads
+```
+
+**Geri yükleme:**
+
+| Ne | Nasıl |
+| :--- | :--- |
+| SQLite | Uygulamayı durdurun, `kaya_pts_<zaman>.db` dosyasını `database.db` yerine kopyalayın. |
+| PostgreSQL | `pg_restore --clean --if-exists --no-owner -d "<veritabanı adresi>" kaya_pts_<zaman>.dump` |
+| Fotoğraflar | `kaya_pts_<zaman>_uploads.zip` (Docker'da `.tar.gz`) içeriğini `uploads/` klasörüne çıkarın. |
+
+> Yedekleri düzenli olarak farklı bir yere (harici disk, bulut depolama) kopyalayın; aynı sunucudaki yedek, sunucu kaybolursa işe yaramaz.
 
 ---
 
@@ -195,7 +235,7 @@ Proje bünyesindeki tüm kimlik doğrulama, brute-force kilitlenmesi, şifre pol
 ```powershell
 .\venv\Scripts\python -m unittest -v
 ```
-> Testler yetkisiz uç nokta erişimi, API doğrulama sınırları, RBAC, CRUD, izin ve Excel çıktısını kapsar.
+> Testler yetkisiz uç nokta erişimi, API doğrulama sınırları, RBAC, CRUD, izin, Excel çıktısı ve yedeklemeyi kapsar. GitHub Actions aynı testleri her push ve pull request'te otomatik çalıştırır (`.github/workflows/tests.yml`).
 
 ---
 
@@ -210,6 +250,8 @@ personelsistemi/
 ├── utils.py                # RBAC decorator, Rate Limit, Dosya/Şifre doğrulama
 ├── test_enterprise.py      # Otomatik test paketi
 ├── test_security.py        # Güvenlik, gizlilik ve rol testleri
+├── test_backup.py          # Yedekleme testleri
+├── backup_db.py            # Veritabanı + fotoğraf yedeği
 ├── clean_system.py         # Sistem sıfırlama ve temizlik scripti
 ├── routes/
 │   ├── auth.py             # Giriş, Çıkış, Rate Limit

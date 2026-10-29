@@ -6,6 +6,8 @@
 //   data-confirm="text"    asks before a form is submitted
 //   data-autosubmit        submits the form when a select changes
 //   data-print             prints the page
+//   data-sidebar-toggle /
+//   data-sidebar-close     open and close the mobile navigation drawer
 
 function openModal(id, opener) {
     const overlay = document.getElementById(id);
@@ -48,6 +50,13 @@ function closeModal(overlay) {
     if (overlay) {
         overlay.classList.remove("active");
     }
+}
+
+function setSidebarOpen(open) {
+    document.body.classList.toggle("sidebar-open", open);
+    document.querySelectorAll("[data-sidebar-toggle]").forEach((button) => {
+        button.setAttribute("aria-expanded", String(open));
+    });
 }
 
 function renderDepartmentChart() {
@@ -100,6 +109,13 @@ document.addEventListener("DOMContentLoaded", () => {
     renderDepartmentChart();
 
     document.addEventListener("click", (event) => {
+        if (event.target.closest("[data-sidebar-toggle]")) {
+            setSidebarOpen(!document.body.classList.contains("sidebar-open"));
+            return;
+        }
+        if (event.target.closest("[data-sidebar-close], .sidebar .nav-link")) {
+            setSidebarOpen(false);
+        }
         const opener = event.target.closest("[data-modal-open]");
         if (opener) {
             openModal(opener.dataset.modalOpen, opener);
@@ -122,6 +138,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.addEventListener("keydown", (event) => {
         if (event.key === "Escape") {
             document.querySelectorAll(".modal-overlay.active").forEach(closeModal);
+            setSidebarOpen(false);
         }
     });
 

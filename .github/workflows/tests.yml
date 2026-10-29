@@ -1,0 +1,68 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    env:
+      FLASK_ENV: testing
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run tests
+        run: python -m unittest discover -v -p "test_*.py"
+
+  # The models and the Alembic migrations must describe the same schema, on
+  # SQLite (local development) and on PostgreSQL (production).
+  migrations:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: kaya_pts
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: kaya_pts
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U kaya_pts -d kaya_pts"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    strategy:
+      matrix:
+        database:
+          - sqlite:////tmp/kaya_pts_ci.db
+          - postgresql+psycopg://kaya_pts:ci-only-password@localhost:5432/kaya_pts
+    env:
+      FLASK_ENV: development
+      DATABASE_URL: ${{ matrix.database }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Apply all migrations to an empty database
+        run: python -m flask --app app:create_app db upgrade
+      - name: Check that migrations match the models
+        run: python -m flask --app app:create_app db check
+      - name: Downgrade and upgrade again
+        run: |
+          python -m flask --app app:create_app db downgrade base
+          python -m flask --app app:create_app db upgrade

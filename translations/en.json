@@ -338,5 +338,7 @@
   "Log Temizliği": "Log Cleanup",
   "API Personel Eklendi": "API Personnel Added",
   "API Personel Güncellendi": "API Personnel Updated",
-  "API Personel Silindi": "API Personnel Deleted"
+  "API Personel Silindi": "API Personnel Deleted",
+  "nav_open_menu": "Open menu",
+  "nav_close_menu": "Close menu"
 }
