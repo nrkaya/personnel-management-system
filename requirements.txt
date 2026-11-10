@@ -8,7 +8,7 @@ openpyxl==3.1.5
 Pillow==12.3.0
 psycopg[binary]==3.3.5
 python-dotenv==1.2.2
-Werkzeug==3.1.8
+Werkzeug==3.1.9
 WTForms==3.2.2
 gunicorn==26.0.0
 # Shared rate-limit storage for several gunicorn workers (RATELIMIT_STORAGE_URI=redis://...).
